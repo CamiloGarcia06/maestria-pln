@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net">
+  <diagram id="cbow" name="CBOW">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cbow-t" value="Pipeline PLN — word2vec CBOW (CBOW implementacion ejemplo.ipynb · shakespeare.txt)" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1470" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-h0" value="Tokenización" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-r0" value="re.sub(r'[,!?;-]', '.', data)&lt;br&gt;nltk.word_tokenize(data)&lt;br&gt;lower() + isalpha()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-h1" value="Vectorización" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-r1" value="nltk.FreqDist(data)&lt;br&gt;get_dict(data) → word2Ind, Ind2word&lt;br&gt;get_vectors() / get_idx()&lt;br&gt;pack_idx_with_frequency()&lt;br&gt;get_batches()  (one-hot promedio del contexto)" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="430" y="200" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-h2" value="Modelo" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="820" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-r2" value="CBOW (red neuronal en NumPy)&lt;br&gt;initialize_model(N, V)&lt;br&gt;forward_prop() + softmax()&lt;br&gt;compute_cost() + back_prop()&lt;br&gt;gradient_descent()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="820" y="200" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-h3" value="Evaluación" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-r3" value="Costo (entropía cruzada) por iteración&lt;br&gt;embs = (W1.T + W2) / 2&lt;br&gt;compute_pca(X, 2)&lt;br&gt;pyplot.scatter() + annotate()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="200" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-lbl" value="CBOW" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-eh0" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="cbow-h0" target="cbow-h1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-er0" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="cbow-r0" target="cbow-r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-eh1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="cbow-h1" target="cbow-h2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-er1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="cbow-r1" target="cbow-r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-eh2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="cbow-h2" target="cbow-h3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cbow-er2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="cbow-r2" target="cbow-r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="skip" name="Skip-gram">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="skip-t" value="Pipeline PLN — word2vec Skip-gram (SkipGram word2vec Ejemplo.ipynb · shakespeare.txt)" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontSize=18;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1470" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-h0" value="Tokenización" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-r0" value="custom_standardization()&lt;br&gt;(tf.strings.lower + regex_replace)&lt;br&gt;layers.TextVectorization()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="300" height="138" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-h1" value="Vectorización" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-r1" value="vectorize_layer.adapt()&lt;br&gt;text_ds.map(vectorize_layer)&lt;br&gt;generate_training_data()&lt;br&gt;skipgrams() + make_sampling_table()&lt;br&gt;log_uniform_candidate_sampler()&lt;br&gt;Dataset.from_tensor_slices()" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="430" y="200" width="300" height="138" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-h2" value="Modelo" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="820" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-r2" value="Skip-gram con muestreo negativo&lt;br&gt;Word2Vec(tf.keras.Model)&lt;br&gt;layers.Embedding() × 2 + tf.einsum()&lt;br&gt;compile(adam, CategoricalCrossentropy)&lt;br&gt;fit(dataset, epochs=20)" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="820" y="200" width="300" height="138" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-h3" value="Evaluación" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="80" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-r3" value="Accuracy y loss en TensorBoard&lt;br&gt;get_layer('w2v_embedding').get_weights()&lt;br&gt;vectors.tsv + metadata.tsv&lt;br&gt;Embedding Projector" style="rounded=0;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffffff;strokeColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="200" width="300" height="138" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-lbl" value="Skip-gram" style="text;html=1;align=center;verticalAlign=middle;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-eh0" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="skip-h0" target="skip-h1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-er0" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="skip-r0" target="skip-r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-eh1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="skip-h1" target="skip-h2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-er1" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="skip-r1" target="skip-r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-eh2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="skip-h2" target="skip-h3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="skip-er2" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#000000;" edge="1" parent="1" source="skip-r2" target="skip-r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

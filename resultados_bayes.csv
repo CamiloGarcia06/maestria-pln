@@ -1,2 +1,0 @@
-classifier,features,train_accuracy,test_accuracy,test_precision,test_recall,test_f1
-Naive Bayes,BoW (TweetTokenizer + stopwords + Snowball stemmer),0.8664383561643836,0.8238072744449693,0.9620954003407155,0.6868349042262085,0.8014901543374136
