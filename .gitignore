@@ -1,0 +1,11 @@
+# Entorno virtual
+.venv/
+
+# CSV original sin comprimir (59 MB); el repositorio usa datos/salud_mental_7clases.csv.gz
+Combined Data es-ES.csv
+
+# Modelos entrenados (se regeneran al ejecutar taller_5.ipynb)
+modelos/
+
+__pycache__/
+.ipynb_checkpoints/
