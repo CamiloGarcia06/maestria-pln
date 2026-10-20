@@ -38,12 +38,15 @@ proyecto-final/
 │   ├── corpus.py            lectura de M2 + JSON → tablas de oraciones y ediciones
 │   ├── texto.py             destokenizador (tokens del M2 → texto natural)
 │   ├── preparar.py          conjuntos de entrenamiento y evaluación
+│   ├── evaluacion.py        F0.5 de ERRANT para la salida de BART
+│   ├── entrenar.py          afinado de BART-base y selección del checkpoint
 │   └── graficas.py          estilo de las figuras
 ├── tests/                   pytest (make test)
 ├── notebooks/
 │   ├── 01_analisis_datos.ipynb     calidad y descripción de los corpus
 │   ├── 02_analisis_tareas.ipynb    análisis dirigido a las dos tareas
-│   └── 03_preparacion.ipynb        preparación paso a paso con ejemplos reales
+│   ├── 03_preparacion.ipynb        preparación paso a paso con ejemplos reales
+│   └── 04_entrenamiento.ipynb      afinado de BART-base: lote, curvas y qué aprendió
 ├── figuras/  resultados/    salidas de los notebooks (PNG y CSV)
 ├── presentacion/            entrega 1
 ├── datos/                   (no versionado) crudos/ y procesados/
@@ -88,6 +91,10 @@ make analisis
 
 # 7. Conjuntos de entrenamiento y evaluación en datos/procesados/entrenamiento/
 make preparar
+
+# 8. Afinar BART-base en segundo plano (≈ 1 h) y seguir su avance
+make entrenar
+make progreso
 ```
 
 Otros comandos: `make url`, `make logs`, `make status`, `make shell`, `make restart`, `make down`. El contenedor se reinicia solo con la máquina (`restart: unless-stopped`).
@@ -137,9 +144,30 @@ errant_compare -hyp hyp.m2 -ref ref.m2
 
 Con `hyp.txt = orig.txt` (copiar la entrada) el resultado es F0.5 = 0: es la línea base.
 
-## Entrenamiento (siguiente paso)
+## Entrenamiento (`make entrenar`)
 
-Afinado completo de los pesos de `facebook/bart-base` (139 M parámetros), sin prompting ni LoRA: `Seq2SeqTrainer`, AdamW con lr ≈ 3e-5, lote 32 en bf16, entre 3 y 10 épocas, checkpoint elegido por F0.5 en `dev_seleccion` (nunca en test), generación con beam search. En la prueba de humo, el lote 32 procesa 234 pares/s con 4,4 GB de pico (≈ 4 min por época); el lote 64 rozó el límite de memoria. Los checkpoints quedan en `modelos/`.
+Afinado completo de los pesos de `facebook/bart-base` (139 M parámetros), sin prompting ni LoRA. `src/entrenar.py` arma el pipeline en pasos que el notebook `04_entrenamiento.ipynb` recorre uno por uno: `cargar_modelo` → `preparar_datos` → `argumentos` → `crear_trainer` → `ejecutar`.
+
+| Parámetro | Valor |
+|---|---|
+| Optimización | AdamW, tasa 3e-5 con calentamiento del 5 % y decaimiento lineal, weight decay 0,01 |
+| Lote y precisión | 32 pares, bf16 |
+| Pérdida | entropía cruzada con label smoothing 0,1 |
+| Largo y generación | 128 piezas; beam search de 4 haces; `no_repeat_ngram_size = 0` (BART-base trae 3, que impide copiar frases con repeticiones) |
+| Selección | F0.5 de ERRANT en `dev_seleccion` al final de cada época; parada temprana tras 3 épocas sin mejorar; el test no se usa |
+
+Resultado del entrenamiento (30 minutos en la RTX 4060 Ti):
+
+| Época | Precisión | Recall | F0.5 en `dev_seleccion` |
+|---|---|---|---|
+| 0 (BART-base sin afinar) | 0,132 | 0,002 | 0,007 |
+| 1 | 0,583 | 0,241 | 0,454 |
+| **2 (elegida)** | **0,597** | **0,308** | **0,503** |
+| 3 | 0,573 | 0,328 | 0,499 |
+| 4 | 0,547 | 0,359 | 0,495 |
+| 5 | 0,535 | 0,356 | 0,486 |
+
+Después de la época 2 el modelo empieza a reescribir más: gana recall pero pierde precisión, y F0.5 baja. En `modelos/bart-base-gec/` quedan `mejor/` (el modelo elegido, listo para `from_pretrained`), `registro.jsonl` (pérdida y F0.5) y `predicciones/` (lo que generó en cada época).
 
 ## Problemas conocidos
 

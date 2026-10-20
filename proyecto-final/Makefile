@@ -3,7 +3,7 @@ COMPOSE := docker compose --env-file infra/.env -f infra/compose.yaml
 PORT    ?= 8888
 
 .DEFAULT_GOAL := help
-.PHONY: help env build up down restart logs status url shell gpu datos test analisis preparar
+.PHONY: help env build up down restart logs status url shell gpu datos test analisis preparar entrenar progreso
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
@@ -58,3 +58,14 @@ analisis: ## Ejecuta los notebooks de análisis en orden (el 02 usa las tablas d
 
 preparar: ## Genera train.jsonl y los conjuntos de evaluación en datos/procesados/entrenamiento/
 	$(COMPOSE) exec jupyter python src/preparar.py
+
+entrenar: ## Afina BART-base en segundo plano (≈1 h); el log queda en modelos/entrenamiento.log
+	mkdir -p modelos
+	$(COMPOSE) exec -d jupyter bash -c "python src/entrenar.py > modelos/entrenamiento.log 2>&1"
+	@echo "Entrenando. Seguimiento: make progreso"
+
+progreso: ## Muestra la pérdida y el F0.5 por época del entrenamiento en curso
+	@$(COMPOSE) exec jupyter python -c "import json; \
+	  [print(f\"época {r['epoca']:>5} · F0.5 {r['eval_f05']:.4f} · P {r['eval_precision']:.3f} · R {r['eval_recall']:.3f}\") if 'eval_f05' in r \
+	   else print(f\"época {r['epoca']:>5} · pérdida {r['loss']:.3f}\") for r in map(json.loads, open('modelos/bart-base-gec/registro.jsonl')) \
+	   if 'eval_f05' in r or r['paso'] % 500 == 0 and 'loss' in r]"
