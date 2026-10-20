@@ -19,6 +19,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
+import torch
 from datasets import Dataset
 from transformers import (AutoModelForSeq2SeqLM, AutoTokenizer, DataCollatorForSeq2Seq, EarlyStoppingCallback,
                           Seq2SeqTrainer, Seq2SeqTrainingArguments, TrainerCallback, set_seed)
@@ -33,6 +34,7 @@ class Config:
     modelo: str = "facebook/bart-base"
     epocas: int = 10
     lote: int = 32                 # 4,4 GB de pico en la RTX 4060 Ti; 64 rozó el límite
+    acumulacion: int = 1           # lotes por paso del optimizador (lote efectivo = lote × acumulacion)
     tasa: float = 3e-5             # learning rate de AdamW
     calentamiento: float = 0.05    # fracción de pasos con la tasa en subida
     decaimiento: float = 0.01      # weight decay
@@ -88,7 +90,9 @@ def metrica_f05(tokenizador, dev: evaluacion.Conjunto, carpeta_predicciones: Pat
 def cargar_modelo(config: Config):
     """Tokenizador y modelo preentrenados, con la generación ajustada para corregir."""
     tokenizador = AutoTokenizer.from_pretrained(config.modelo)
-    modelo = AutoModelForSeq2SeqLM.from_pretrained(config.modelo)
+    # transformers 5 carga en el tipo guardado: bart-large viene en float16 y AdamW lo vuelve NaN al primer paso.
+    # Los pesos maestros van en float32; bf16=True solo hace los cálculos en bf16.
+    modelo = AutoModelForSeq2SeqLM.from_pretrained(config.modelo, dtype=torch.float32)
     # bart-base prohíbe repetir trigramas al generar; en corrección hay que poder copiar "in the ... in the"
     modelo.generation_config.no_repeat_ngram_size = 0
     # Quedan guardados con el modelo: la app y el notebook 05 generan igual que la selección
@@ -110,11 +114,12 @@ def preparar_datos(config: Config, datos: Path, tokenizador):
 
 
 def argumentos(config: Config, salida: Path, n_train: int) -> Seq2SeqTrainingArguments:
-    pasos = math.ceil(n_train / config.lote) * config.epocas
+    pasos = math.ceil(n_train / (config.lote * config.acumulacion)) * config.epocas
     return Seq2SeqTrainingArguments(
         output_dir=str(salida),
         num_train_epochs=config.epocas,
         per_device_train_batch_size=config.lote,
+        gradient_accumulation_steps=config.acumulacion,
         per_device_eval_batch_size=64,
         learning_rate=config.tasa,
         warmup_steps=int(config.calentamiento * pasos),
@@ -177,12 +182,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--datos", type=Path, default=RAIZ / "datos" / "procesados" / "entrenamiento")
     parser.add_argument("--salida", type=Path, default=RAIZ / "modelos" / "bart-base-gec")
+    parser.add_argument("--modelo", default=Config.modelo)
     parser.add_argument("--epocas", type=int, default=Config.epocas)
     parser.add_argument("--lote", type=int, default=Config.lote)
+    parser.add_argument("--acumulacion", type=int, default=Config.acumulacion)
     parser.add_argument("--tasa", type=float, default=Config.tasa)
     parser.add_argument("--muestra", type=int, default=None)
     args = parser.parse_args()
-    config = Config(epocas=args.epocas, lote=args.lote, tasa=args.tasa, muestra=args.muestra)
+    config = Config(modelo=args.modelo, epocas=args.epocas, lote=args.lote, acumulacion=args.acumulacion,
+                    tasa=args.tasa, muestra=args.muestra)
     entrenar(config, args.datos, args.salida)
 
 

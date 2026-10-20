@@ -50,8 +50,8 @@ def tokenizar(textos: list[str]) -> list[str]:
     return [" ".join(t.text for t in tokenizador(s.strip())) for s in textos]
 
 
-def f05(conjunto: Conjunto, hipotesis: list[str]) -> dict[str, float]:
-    """F0.5 de ERRANT de hipótesis ya tokenizadas (una por oración del conjunto)."""
+def _comparar(conjunto: Conjunto, hipotesis: list[str], *opciones: str) -> str:
+    """Salida de errant_compare para hipótesis ya tokenizadas (una por oración del conjunto)."""
     if len(hipotesis) != len(conjunto):
         raise ValueError(f"{len(hipotesis)} hipótesis para {len(conjunto)} oraciones")
     with tempfile.TemporaryDirectory() as tmp:
@@ -61,8 +61,25 @@ def f05(conjunto: Conjunto, hipotesis: list[str]) -> dict[str, float]:
         (tmp / "ref.m2").write_text("\n\n".join(conjunto.ref) + "\n\n", encoding="utf-8")
         subprocess.run(["errant_parallel", "-orig", tmp / "orig.txt", "-cor", tmp / "hyp.txt", "-out", tmp / "hyp.m2"],
                        check=True, capture_output=True)
-        salida = subprocess.run(["errant_compare", "-hyp", tmp / "hyp.m2", "-ref", tmp / "ref.m2"],
-                                check=True, capture_output=True, text=True).stdout.split()
+        return subprocess.run(["errant_compare", "-hyp", tmp / "hyp.m2", "-ref", tmp / "ref.m2", *opciones],
+                              check=True, capture_output=True, text=True).stdout
+
+
+def f05(conjunto: Conjunto, hipotesis: list[str]) -> dict[str, float]:
+    """F0.5 de ERRANT de hipótesis ya tokenizadas (una por oración del conjunto)."""
+    salida = _comparar(conjunto, hipotesis).split()
     i = salida.index("F0.5") + 1
     tp, fp, fn, p, r, f = salida[i:i + 6]
     return {"tp": int(tp), "fp": int(fp), "fn": int(fn), "precision": float(p), "recall": float(r), "f05": float(f)}
+
+
+def f05_por_tipo(conjunto: Conjunto, hipotesis: list[str]) -> dict[str, dict[str, float]]:
+    """Lo mismo que f05, separado por tipo de error de ERRANT sin la operación (VERB:SVA, DET, SPELL…)."""
+    tipos = {}
+    for linea in _comparar(conjunto, hipotesis, "-cat", "2").splitlines():
+        partes = linea.split()
+        if len(partes) == 7 and partes[1].isdigit():
+            tipo, tp, fp, fn, p, r, f = partes
+            tipos[tipo] = {"tp": int(tp), "fp": int(fp), "fn": int(fn),
+                           "precision": float(p), "recall": float(r), "f05": float(f)}
+    return tipos

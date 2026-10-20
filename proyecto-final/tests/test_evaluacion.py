@@ -1,6 +1,6 @@
 import pytest
 
-from evaluacion import Conjunto, f05, leer_conjunto, tokenizar
+from evaluacion import Conjunto, f05, f05_por_tipo, leer_conjunto, tokenizar
 
 REF = [
     "S He go home .\nA 1 2|||R:VERB:SVA|||goes|||REQUIRED|||-NONE-|||0",
@@ -42,3 +42,8 @@ def test_leer_conjunto_y_recortar(tmp_path):
     conjunto = leer_conjunto(tmp_path)
     assert conjunto.ref == REF and len(conjunto) == 2
     assert conjunto.primeros(1).orig == ["He go home ."]
+
+
+def test_f05_por_tipo_separa_las_categorias():
+    tipos = f05_por_tipo(CONJUNTO, tokenizar(["He goes home.", "It was fine."]))
+    assert tipos["VERB:SVA"]["tp"] == 1 and tipos["VERB:TENSE"]["fp"] == 1
