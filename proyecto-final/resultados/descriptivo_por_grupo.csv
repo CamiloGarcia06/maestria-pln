@@ -1,0 +1,7 @@
+grupo,oraciones,tokens_medios,pct_sin_error,errores_por_oracion,errores_por_100_tokens
+FCE · es,4617,18.04,36.11,1.85,10.26
+FCE · otras L1,28619,15.66,35.99,1.54,9.85
+W&I · A,11530,17.55,20.51,2.79,15.87
+W&I · B,14322,18.28,28.97,1.88,10.3
+W&I · C,11852,19.27,48.98,0.95,4.94
+LOCNESS (nativos),988,23.4,47.77,0.96,4.11

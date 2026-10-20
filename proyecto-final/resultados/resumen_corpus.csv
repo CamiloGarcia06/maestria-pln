@@ -1,0 +1,7 @@
+corpus,split,textos,autores,oraciones,tokens,ediciones,pct_sin_error
+fce,dev,159,80,2191,34748,3529,36.3
+fce,test,194,97,2695,41932,4760,32.2
+fce,train,2116,1061,28350,454736,44382,36.3
+locness,dev,50,50,988,23117,950,47.8
+wi,dev,300,296,3396,63856,6682,31.1
+wi,train,3000,2425,34308,628720,63683,32.8
