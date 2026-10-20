@@ -1,0 +1,5 @@
+escenario,TP,FP,FN,P,R,F0.5
+copiar la entrada,0,0,4549,1.0,0.0,0.0
+referencia en tokens del M2,3936,670,613,0.8545,0.8652,0.8567
+referencia destokenizada → spaCy 3.8,3933,682,616,0.8522,0.8646,0.8547
+referencia destokenizada → spaCy 3.8 · solo es,518,88,94,0.8548,0.8464,0.8531

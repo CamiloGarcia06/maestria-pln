@@ -1,0 +1,11 @@
+análisis,tarea,decisión,valor,por qué
+T1,Generación,Texto de entrada y salida de BART,destokenizado (src/texto.py),ida y vuelta exacta en 99.34% de las originales; 1% menos tokens BPE
+T2,Generación,Métrica,F0.5 sobre ediciones (ERRANT),en los pares que cambian se copia el 86% de los tokens: la exactitud por token premiaría copiar
+T3,Generación,Largo máximo de generación,"128, igual que la entrada","p99,9 de la razón de largos = 1.33 en BPE; 3 pares extremos para revisar"
+T4,Generación,Tokenizador,BPE de BART sin cambios,0 tokens <unk>; una palabra mal escrita usa 2.5 piezas contra 1.1
+T5,Generación,Splits,revisar,dev FCE → train FCE: JSD 0.037 (azar p95 0.042); dev W&I → train W&I: JSD 0.026 (azar p95 0.029); test FCE → train FCE: JSD 0.084 (azar p95 0.036); test FCE · es → train FCE · es: JSD 0.215 (azar p95 0.103)
+P1,POS tagging,Tipos de error,retipados con ERRANT 3.0.2,94.8% igual al oro; *:OTHER pasa de 13.4% a 11.1%
+P2,POS tagging,Confianza en el tipo de error,sin capa de advertencias,"junto al error cambia de POS a lo sumo el 2.9% de las palabras no editadas; a 6 o más, el 0.01%"
+P3,POS tagging,Modelo spaCy para tipar y explicar,en_core_web_sm,lg cambia la inestabilidad en 0.04 puntos; la evaluación oficial sigue con sm
+P4,POS tagging,Plantillas de explicación,25 tipos (13 categorías),cubren el 90% de las ediciones; 18 tipos cubren el 80%
+P5,POS tagging,Techo de F0.5 del pipeline de evaluación,0.8547,copiar da 0.00; la referencia en tokens del M2 da 0.8567

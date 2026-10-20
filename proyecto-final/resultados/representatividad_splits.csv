@@ -1,0 +1,6 @@
+comparación,ediciones,JSD contra train,azar p95,dentro del azar
+dev FCE → train FCE,3421,0.0371,0.0422,True
+dev W&I → train W&I,6532,0.0264,0.0288,True
+test FCE → train FCE,4549,0.0841,0.0355,False
+test FCE · es → train FCE · es,612,0.2148,0.1032,False
+referencia: train W&I → train FCE,62034,0.1577,0.0102,False
