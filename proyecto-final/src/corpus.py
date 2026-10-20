@@ -74,6 +74,16 @@ def aplicar_ediciones(tokens: list[str], ediciones: list[Edicion], anotador: int
     return corregida
 
 
+def posiciones_en_corregida(ediciones: list[Edicion]) -> list[tuple[int, int]]:
+    """(inicio, fin) de cada edición dentro de la oración corregida, en el orden de aplicación."""
+    posiciones, desfase = [], 0
+    for e in sorted(ediciones, key=lambda e: (e.inicio, e.fin)):
+        n = len(e.correccion.split())
+        posiciones.append((e.inicio + desfase, e.inicio + desfase + n))
+        desfase += n - (e.fin - e.inicio)
+    return posiciones
+
+
 def _sin_espacios(texto: str) -> str:
     return re.sub(r"\s", "", texto.translate(NORMALIZACION))
 

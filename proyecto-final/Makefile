@@ -49,5 +49,6 @@ datos: ## Descarga FCE y W&I+LOCNESS en datos/crudos/
 test: ## Corre los tests de src/
 	$(COMPOSE) exec jupyter pytest -q
 
-analisis: ## Ejecuta el notebook de análisis de punta a punta y guarda sus salidas
-	$(COMPOSE) exec jupyter jupyter nbconvert --to notebook --execute --inplace notebooks/01_analisis_datos.ipynb
+analisis: ## Ejecuta los notebooks de análisis en orden (el 02 usa las tablas del 01)
+	$(COMPOSE) exec jupyter jupyter nbconvert --to notebook --execute --inplace \
+	  --ExecutePreprocessor.timeout=1800 notebooks/01_analisis_datos.ipynb notebooks/02_analisis_tareas.ipynb

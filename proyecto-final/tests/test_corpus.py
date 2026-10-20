@@ -42,3 +42,12 @@ def test_alinear_liga_cada_oracion_con_su_ensayo_pese_a_espacios_y_comillas():
 def test_alinear_falla_si_el_texto_no_coincide():
     with pytest.raises(ValueError):
         alinear_con_ensayos([Oracion(["Other"])], [{"text": "Text"}])
+
+
+def test_posiciones_en_corregida_sigue_inserciones_y_borrados():
+    from corpus import posiciones_en_corregida
+    tokens = "I want go to the the park".split()
+    ediciones = [Edicion(4, 5, "U:DET", "", 0), Edicion(2, 2, "M:VERB:FORM", "to", 0)]
+    corregida = aplicar_ediciones(tokens, ediciones)
+    assert posiciones_en_corregida(ediciones) == [(2, 3), (5, 5)]
+    assert corregida[2:3] == ["to"]
