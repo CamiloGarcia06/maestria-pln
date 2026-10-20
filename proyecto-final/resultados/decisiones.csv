@@ -1,5 +1,5 @@
 decisión,valor,por qué
-Largo máximo (tokens BPE),72,cubre el 99.55% de los pares de train; 60 cubría el 98.96%
+Largo máximo (tokens BPE),128,"fijado en la entrega 1; cubre el 99.95% de los pares de train, se recortan 30"
 Oraciones sin error,se conservan,34.4% de train: enseñan a no tocar lo que está bien
 Pares con UNK en train,se excluyen del entrenamiento,"2,779 pares (4.4%) cuyo destino conserva un error marcado"
 Pares duplicados exactos en train,se deduplican,"3,636 pares"
