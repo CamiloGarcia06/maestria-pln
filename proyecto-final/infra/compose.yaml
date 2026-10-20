@@ -28,7 +28,8 @@ services:
           devices:
             - driver: nvidia
               count: all
-              capabilities: [gpu, utility]
+              # compute monta libcuda (PyTorch); utility monta nvidia-smi
+              capabilities: [gpu, compute, utility]
 
 volumes:
   hf-cache:
