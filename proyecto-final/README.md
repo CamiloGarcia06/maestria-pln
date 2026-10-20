@@ -42,7 +42,8 @@ proyecto-final/
 ├── tests/                   pytest (make test)
 ├── notebooks/
 │   ├── 01_analisis_datos.ipynb     calidad y descripción de los corpus
-│   └── 02_analisis_tareas.ipynb    análisis dirigido a las dos tareas
+│   ├── 02_analisis_tareas.ipynb    análisis dirigido a las dos tareas
+│   └── 03_preparacion.ipynb        preparación paso a paso con ejemplos reales
 ├── figuras/  resultados/    salidas de los notebooks (PNG y CSV)
 ├── presentacion/            entrega 1
 ├── datos/                   (no versionado) crudos/ y procesados/
@@ -114,6 +115,8 @@ Los dos notebooks verifican las cifras de la entrega 1 y traducen cada hallazgo 
 - **Techo de evaluación:** aun con las correcciones de referencia, ERRANT sobre texto destokenizado llega a F0.5 = 0,855; los resultados del modelo se leen contra ese techo.
 
 ## Preparación de los datos (`make preparar`)
+
+El notebook `03_preparacion.ipynb` recorre cada transformación con una oración real (M2 → par → texto natural → filtros → BPE) y comprueba la cadena de evaluación; `make preparar` produce los mismos archivos sin abrirlo.
 
 | Conjunto | Contenido | Tamaño | Uso |
 |---|---|---|---|
