@@ -7,7 +7,7 @@ matplotlib
 seaborn
 jupyterlab
 ipykernel
-# Análisis: tokenizador de BART (sin torch), pruebas estadísticas, parquet y tests
+# Análisis y modelo: tokenizador y BART (transformers), pruebas estadísticas, parquet y tests
 transformers==5.20.2
 scipy
 pyarrow
