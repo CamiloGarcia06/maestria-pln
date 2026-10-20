@@ -1,0 +1,19 @@
+# Regenera /etc/cdi/nvidia.yaml en cada arranque de la torre.
+# El kernel asigna el número de dispositivo de nvidia-uvm al cargar el módulo y puede cambiar
+# entre reinicios; con la especificación vieja, PyTorch falla con "CUDA unknown error".
+# Instalación (una vez):
+#   sudo install -m 644 infra/nvidia-cdi-generate.service /etc/systemd/system/
+#   sudo systemctl enable nvidia-cdi-generate.service
+[Unit]
+Description=Regenerar la especificación CDI de NVIDIA para Docker
+After=systemd-modules-load.service
+Before=docker.service
+
+[Service]
+Type=oneshot
+# Carga nvidia-uvm y crea sus dispositivos antes de leer su número
+ExecStartPre=/usr/bin/nvidia-modprobe -u -c=0
+ExecStart=/usr/bin/nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+
+[Install]
+WantedBy=multi-user.target

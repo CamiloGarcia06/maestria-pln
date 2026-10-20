@@ -8,12 +8,12 @@ seaborn
 jupyterlab
 ipykernel
 # Análisis: tokenizador de BART (sin torch), pruebas estadísticas, parquet y tests
-transformers
+transformers==5.20.2
 scipy
 pyarrow
 nbconvert
 pytest
 # Entrenamiento de BART-base en GPU (el wheel de PyPI trae CUDA incluido)
-torch
-accelerate
-datasets
+torch==2.14.1
+accelerate==1.15.0
+datasets==5.1.0
