@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutor de escritura · Entrega 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  /* Mismo sistema que el manual del IAckathon: escenario 1600×900, serif para títulos, mono para etiquetas.
+     El acento es el rojo de la pluma del profesor; el verde marca lo que el tutor inserta. */
+  :root {
+    --ground: #e9e7e1; --paper: #f7f6f2; --card: #ffffff;
+    --ink: #1a1917; --ink-2: #4a4843; --muted: #8a877f; --rule: #dedbd3; --rule-2: #cbc7bd;
+    --accent: #a4262c; --accent-soft: rgba(164, 38, 44, 0.08);
+    --ok: #2f6b3a; --ok-soft: rgba(47, 107, 58, 0.10);
+    --info: #1f5f9e; --info-soft: rgba(31, 95, 158, 0.10);
+    --warn: #8a5a00; --warn-soft: rgba(196, 140, 20, 0.14);
+    --code-bg: #1d1c1a; --code-ink: #efece4; --code-dim: #8f8b82; --code-acc: #e9a27b;
+    --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --sans: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --ground: #0d0c0b; --paper: #161513; --card: #1e1d1a;
+    --ink: #f1eee6; --ink-2: #c4c0b6; --muted: #8c887e; --rule: #2e2c28; --rule-2: #3d3a35;
+    --accent: #ef7d75; --accent-soft: rgba(239, 125, 117, 0.10);
+    --ok: #8fd19b; --ok-soft: rgba(143, 209, 155, 0.10); --info: #8cbcf0; --info-soft: rgba(140, 188, 240, 0.10);
+    --warn: #e7c06a; --warn-soft: rgba(231, 192, 106, 0.12); --code-bg: #0a0a09; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --ground: #0d0c0b; --paper: #161513; --card: #1e1d1a;
+    --ink: #f1eee6; --ink-2: #c4c0b6; --muted: #8c887e; --rule: #2e2c28; --rule-2: #3d3a35;
+    --accent: #ef7d75; --accent-soft: rgba(239, 125, 117, 0.10);
+    --ok: #8fd19b; --ok-soft: rgba(143, 209, 155, 0.10); --info: #8cbcf0; --info-soft: rgba(140, 188, 240, 0.10);
+    --warn: #e7c06a; --warn-soft: rgba(231, 192, 106, 0.12); --code-bg: #0a0a09; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 400 22px/1.45 var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+
+  /* Escenario */
+  .viewport { position: fixed; inset: 0; display: grid; place-items: center; }
+  .stage { width: 1600px; height: 900px; position: relative; background: var(--paper); transform: scale(var(--s, 1)); transform-origin: center; box-shadow: 0 30px 80px rgba(0,0,0,.18); overflow: hidden; }
+  .slide { position: absolute; inset: 0 0 64px 0; padding: 60px 96px 36px; opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility 0s linear .28s; }
+  .slide.active { opacity: 1; visibility: visible; transition: opacity .28s ease; }
+  @media (prefers-reduced-motion: reduce) { .slide, .slide.active { transition: none; } }
+  .notes { display: none; }
+
+  /* Chrome inferior */
+  .chrome { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; border-top: 1px solid var(--rule); display: flex; align-items: center; gap: 24px; padding: 0 32px 0 96px; background: var(--paper); z-index: 5; }
+  .brand { font: 500 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .brand b { color: var(--ink); font-weight: 500; }
+  .sections { display: flex; gap: 4px; flex: 1; justify-content: center; }
+  .sections button { font: 500 13px/1 var(--mono); letter-spacing: .04em; color: var(--muted); background: none; border: 0; padding: 9px 12px; border-radius: 999px; cursor: pointer; }
+  .sections button:hover { color: var(--ink); }
+  .sections button[aria-current="true"] { color: var(--ink); background: var(--card); box-shadow: inset 0 0 0 1px var(--rule-2); }
+  .sections button .n { color: var(--accent); margin-right: 6px; }
+  .counter { font: 500 14px/1 var(--mono); color: var(--muted); min-width: 64px; text-align: right; }
+  .nav { display: flex; gap: 6px; }
+  .nav button { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--rule-2); background: var(--card); color: var(--ink); font: 500 18px/1 var(--mono); cursor: pointer; }
+  .nav button:hover { border-color: var(--ink-2); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .progress { position: absolute; left: 0; bottom: 63px; height: 2px; background: var(--accent); transition: width .3s ease; z-index: 6; }
+
+  /* Tipografía */
+  .kicker { font: 500 14px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 18px; display: flex; gap: 12px; }
+  .kicker .step { color: var(--muted); }
+  h1, h2 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; margin: 0; }
+  h2 { font-size: 60px; line-height: 1.02; }
+  .lede { font-size: 24px; color: var(--ink-2); max-width: 46ch; margin: 18px 0 0; }
+  code, .mono { font-family: var(--mono); font-size: .86em; }
+  p code, li code, td code { background: var(--accent-soft); color: var(--ink); padding: 2px 7px; border-radius: 6px; }
+  .fine { font-size: 16px; color: var(--muted); margin: 14px 0 0; }
+  .fine b { color: var(--ink-2); font-weight: 600; }
+  del { color: var(--accent); background: var(--accent-soft); text-decoration-thickness: 2px; padding: 0 .12em; border-radius: 3px; }
+  ins { color: var(--ok); background: var(--ok-soft); text-decoration: none; font-weight: 600; padding: 0 .12em; border-radius: 3px; }
+
+  /* Portada */
+  .cover { display: grid; grid-template-columns: 1.15fr .85fr; gap: 64px; align-items: center; height: 100%; }
+  .cover h1 { font-size: 118px; line-height: .94; }
+  .cover h1 em { font-style: italic; color: var(--accent); }
+  .cover .lede { font-size: 26px; max-width: 32ch; }
+  .tag { font: 500 14px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 28px; }
+  .keys-hint { margin-top: 44px; display: flex; gap: 22px; flex-wrap: wrap; font: 400 15px/1 var(--mono); color: var(--muted); }
+  kbd { font: 500 13px/1 var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--rule-2); border-bottom-width: 2px; border-radius: 6px; padding: 5px 8px; margin-right: 8px; }
+  .toc { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-2); }
+  .toc li { display: grid; grid-template-columns: 44px 1fr auto; align-items: baseline; padding: 15px 0; border-bottom: 1px solid var(--rule); cursor: pointer; }
+  .toc li:hover .t { color: var(--accent); }
+  .toc .n { font: 500 14px/1 var(--mono); color: var(--accent); }
+  .toc .t { font: 400 30px/1.1 var(--serif); }
+  .toc .d { font: 400 14px/1 var(--mono); color: var(--muted); }
+
+  /* Columnas y tarjetas */
+  .cols2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; }
+  .cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 40px; }
+  .card { background: var(--card); border: 1px solid var(--rule); border-radius: 16px; padding: 26px 30px; }
+  .card h3 { font: 600 22px/1.25 var(--sans); margin: 0 0 6px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .card > p { margin: 10px 0 0; color: var(--ink-2); font-size: 20px; }
+  .pill { font: 500 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 6px 10px; }
+  .pill.ok { color: var(--ok); background: var(--ok-soft); } .pill.info { color: var(--info); background: var(--info-soft); } .pill.warn { color: var(--warn); background: var(--warn-soft); } .pill.mute { color: var(--muted); background: var(--rule); }
+  ol.steps { margin: 14px 0 0; padding: 0; list-style: none; counter-reset: s; }
+  ol.steps li { counter-increment: s; position: relative; padding-left: 40px; margin: 14px 0; font-size: 20px; color: var(--ink-2); }
+  ol.steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--paper); font: 600 13px/24px var(--mono); text-align: center; }
+  ol.steps li b { color: var(--ink); font-weight: 600; }
+
+  /* Usuario */
+  .persona { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; margin-top: 44px; align-items: start; }
+  .quote-big { font: italic 400 50px/1.2 var(--serif); color: var(--ink); border-left: 3px solid var(--accent); padding-left: 28px; margin: 0; }
+  .pains { list-style: none; margin: 0; padding: 0; }
+  .pains li { padding: 24px 0; border-top: 1px solid var(--rule-2); font-size: 22px; color: var(--ink-2); }
+  .pains b { display: block; color: var(--ink); font-weight: 600; font-size: 25px; margin-bottom: 2px; }
+
+  /* Maqueta de la app */
+  .shot-layout { display: grid; grid-template-columns: 1000px 1fr; gap: 56px; margin-top: 30px; align-items: start; }
+  .mock { position: relative; background: var(--card); border-radius: 14px; box-shadow: 0 0 0 1px var(--rule-2), 0 18px 40px rgba(0,0,0,.10); overflow: visible; }
+  .mock .bar { display: flex; justify-content: space-between; padding: 14px 22px; border-bottom: 1px solid var(--rule); font: 500 13px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .mock .body { display: grid; grid-template-columns: 1.1fr .9fr; }
+  .mock .pane { padding: 22px 24px; display: grid; gap: 16px; align-content: start; position: relative; }
+  .mock .pane + .pane { border-left: 1px solid var(--rule); }
+  .essay { font: 400 25px/1.75 var(--serif); margin: 0; }
+  .level { display: flex; align-items: center; gap: 14px; border-top: 1px solid var(--rule); padding-top: 14px; font-size: 15px; color: var(--muted); }
+  .level b { font: 400 54px/1 var(--serif); color: var(--accent); }
+  .errs { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .errs li { font-size: 16px; line-height: 1.4; color: var(--ink-2); border-bottom: 1px dashed var(--rule-2); padding-bottom: 10px; }
+  .errs .t { display: block; font: 500 12px/1.4 var(--mono); color: var(--accent); letter-spacing: .04em; }
+  .zone-n { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font: 600 15px/30px var(--mono); text-align: center; box-shadow: 0 0 0 4px var(--paper); }
+  .legend { list-style: none; margin: 0; padding: 0; }
+  .legend li { display: grid; grid-template-columns: 42px 1fr; margin-bottom: 26px; }
+  .legend .b { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font: 600 15px/30px var(--mono); text-align: center; }
+  .legend h3 { font: 600 21px/1.25 var(--sans); margin: 2px 0 4px; }
+  .legend p { margin: 0; font-size: 18px; color: var(--ink-2); }
+
+  /* Ciclo en 4 pasos */
+  .loop { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 60px; position: relative; }
+  .loop::before { content: ""; position: absolute; left: 6%; right: 6%; top: 44px; height: 2px; background: repeating-linear-gradient(90deg, var(--rule-2) 0 10px, transparent 10px 18px); }
+  .loop .st { padding: 0 26px; }
+  .loop .ic { width: 88px; height: 88px; border-radius: 50%; background: var(--card); box-shadow: inset 0 0 0 1px var(--rule-2); display: grid; place-items: center; color: var(--accent); position: relative; z-index: 1; margin-bottom: 26px; }
+  .loop .ic svg { width: 36px; height: 36px; }
+  .loop .num { font: 500 14px/1 var(--mono); color: var(--accent); letter-spacing: .1em; }
+  .loop h3 { font: 400 40px/1.05 var(--serif); margin: 10px 0 12px; }
+  .loop p { margin: 0; font-size: 19px; color: var(--ink-2); }
+  .bigline { margin-top: 64px; padding-top: 26px; border-top: 1px solid var(--rule-2); font: 400 32px/1.3 var(--serif); max-width: 56ch; }
+  .bigline em { color: var(--accent); }
+
+  /* Tópicos */
+  .topics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 36px; }
+  .topic { background: var(--card); border: 1px solid var(--rule); border-radius: 14px; padding: 20px; display: grid; gap: 10px; align-content: start; }
+  .topic h3 { font: 400 30px/1.05 var(--serif); margin: 0; }
+  .topic p { margin: 0; font-size: 16px; color: var(--ink-2); line-height: 1.4; }
+  .topic .tr { font: 500 12px/1.3 var(--mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 10px; }
+  .topic .tr.yes { color: var(--ok); }
+  .unused { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 26px; font: 400 15px/1 var(--mono); color: var(--muted); }
+  .unused span { border: 1px dashed var(--rule-2); border-radius: 999px; padding: 7px 12px; }
+
+  /* Números y tablas */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 40px; border-top: 1px solid var(--rule-2); }
+  .stats-row div { padding: 22px 24px 0 0; }
+  .stats-row b { display: block; font: 400 80px/1 var(--serif); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stats-row span { font: 500 13px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  table.t { width: 100%; border-collapse: collapse; margin-top: 34px; font-size: 21px; }
+  table.t th { text-align: left; font: 500 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 0 18px 12px 0; }
+  table.t td { padding: 17px 20px 17px 0; border-top: 1px solid var(--rule); vertical-align: top; color: var(--ink-2); }
+  table.t td:first-child { color: var(--ink); }
+  table.t .sent { font: 400 28px/1.3 var(--serif); }
+  table.t .ty { font: 500 15px/1.4 var(--mono); color: var(--accent); white-space: nowrap; }
+  table.t .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Barras */
+  .bars { display: grid; gap: 20px; margin-top: 8px; }
+  .brow { display: grid; grid-template-columns: 230px 1fr 110px; gap: 16px; align-items: center; font-size: 19px; }
+  .pair { display: grid; gap: 4px; }
+  .track { height: 12px; background: var(--rule); border-radius: 3px; }
+  .fill { height: 100%; background: var(--accent); border-radius: 3px; }
+  .fill.b { background: var(--muted); }
+  .brow .v { font: 500 14px var(--mono); text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+  .key { display: flex; gap: 20px; font: 400 14px/1 var(--mono); color: var(--muted); }
+  .key i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+
+  /* Terminal */
+  .term { background: var(--code-bg); color: var(--code-ink); border-radius: 14px; font: 400 16px/1.65 var(--mono); padding: 0 0 16px; overflow: hidden; box-shadow: 0 18px 40px rgba(0,0,0,.18); }
+  .term .tb { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; color: var(--code-dim); }
+  .term .tb i { width: 11px; height: 11px; border-radius: 50%; background: #3a3833; display: inline-block; }
+  .term .tb span { margin-left: 8px; letter-spacing: .08em; text-transform: uppercase; }
+  .term pre { margin: 0; padding: 14px 22px 0; font: inherit; white-space: pre-wrap; }
+  .term .c { color: var(--code-dim); } .term .k { color: #9fd3a8; } .term .v { color: #f3d58a; } .term .p { color: var(--code-acc); }
+
+  /* Tokens */
+  .toks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tk { display: grid; justify-items: center; border: 1px solid var(--rule-2); border-radius: 7px; padding: 5px 8px; background: var(--card); min-width: 46px; }
+  .tk span { font: 500 16px/1.3 var(--mono); }
+  .tk small { font: 400 12px/1.2 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tk.d { border-color: var(--accent); background: var(--accent-soft); } .tk.d span { color: var(--accent); }
+  .tk.i { border-color: var(--ok); background: var(--ok-soft); } .tk.i span { color: var(--ok); }
+  .rowlbl { font: 500 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-top: 26px; }
+
+  /* Diagrama */
+  .slide--diagram { padding: 34px 40px 22px; display: flex; flex-direction: column; }
+  .dhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 0 56px 18px; }
+  .dhead .kicker { margin-bottom: 12px; }
+  .dhead h2 { font-size: 46px; }
+  .dhint { font: 400 14px/1.5 var(--mono); color: var(--muted); text-align: right; max-width: 430px; margin: 0; }
+  .dhint kbd { font-size: 12px; padding: 3px 6px; margin: 0; }
+  .frame { flex: 1; border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px var(--rule-2); background: var(--card); position: relative; }
+  .frame iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .frame .loading[hidden] { display: none; }
+  .frame .loading { position: absolute; inset: 0; display: grid; place-items: center; font: 400 15px/1 var(--mono); color: var(--muted); pointer-events: none; }
+
+  /* Cierre */
+  .end { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; height: 100%; }
+  .end h2 { font-size: 104px; line-height: .95; }
+  .end h2 em { font-style: italic; color: var(--accent); }
+  .recap { list-style: none; margin: 0; padding: 0; }
+  .recap li { padding: 20px 0; border-top: 1px solid var(--rule-2); font: 400 28px/1.25 var(--serif); }
+  .recap li span { display: block; font: 500 13px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .alert { margin-top: 26px; display: flex; gap: 14px; padding: 16px 20px; border-radius: 12px; background: var(--warn-soft); color: var(--ink-2); font-size: 17px; }
+  .alert b { color: var(--warn); font-weight: 600; white-space: nowrap; }
+
+  /* Notas del orador */
+  .notes-panel { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(1100px, calc(100vw - 32px)); max-height: 34vh; overflow: auto; background: rgba(20, 19, 17, 0.94); color: #f1eee6; border-radius: 14px; padding: 18px 24px; font: 400 18px/1.5 var(--sans); z-index: 50; }
+  .notes-panel[hidden] { display: none; }
+  .notes-panel .hd { font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: #e9a27b; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .notes-panel ul { margin: 0; padding-left: 20px; }
+  .focus-hint { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(20, 19, 17, 0.92); color: #f1eee6; font: 400 14px/1 var(--mono); padding: 10px 14px; border-radius: 999px; z-index: 60; cursor: pointer; }
+  .focus-hint[hidden] { display: none; }
+
+  /* Entrega 1: láminas por criterio de la rúbrica */
+  .kicker .w { color: var(--ink); background: var(--accent-soft); border-radius: 999px; padding: 4px 10px; margin-top: -4px; letter-spacing: .08em; }
+  .market { display: grid; grid-template-columns: 1.05fr .95fr; gap: 64px; margin-top: 40px; align-items: start; }
+  .para { font: 400 31px/1.42 var(--serif); margin: 0; color: var(--ink); }
+  .para em { color: var(--accent); }
+  .mock.mini .body { grid-template-columns: 1fr; }
+  .mock.mini .pane + .pane { border-left: 0; border-top: 1px solid var(--rule); }
+  .mock.mini .essay { font-size: 22px; line-height: 1.7; }
+  .mock.mini .level b { font-size: 44px; }
+  .task-hero { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; margin-top: 34px; align-items: start; }
+  .task-hero .para { font-size: 28px; }
+  .io { background: var(--card); border: 1px solid var(--rule); border-radius: 16px; padding: 24px 28px; display: grid; gap: 12px; }
+  .io .lbl { font: 500 13px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .io .s { font: 400 26px/1.4 var(--serif); margin: 0; }
+  .io .arrow { font: 500 14px/1 var(--mono); color: var(--accent); }
+  .support { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 34px; }
+  .support .topic h3 { font-size: 30px; }
+  .support .topic p { font-size: 19px; }
+  .m2 { display: grid; grid-template-columns: 1.25fr .75fr; gap: 48px; margin-top: 34px; align-items: start; }
+  .m2 .term { font-size: 18px; }
+  .m2 .term .s { color: var(--code-ink); } .m2 .term .a { color: var(--code-dim); } .m2 .term .y { color: #f3d58a; } .m2 .term .g { color: #9fd3a8; }
+  .pipe { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 24px; margin-top: 28px; }
+  .ptask { background: var(--card); border: 1px solid var(--rule); border-radius: 16px; padding: 24px 28px; }
+  .ptask .hd { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ptask .no { font: 500 14px/1 var(--mono); color: var(--accent); }
+  .ptask h3 { font: 400 30px/1.05 var(--serif); margin: 0; flex: 1 0 auto; }
+  .ptask p { margin: 12px 0 0; font-size: 20px; line-height: 1.55; color: var(--ink-2); }
+  .ptask p b { color: var(--ink); font-weight: 600; }
+  .ptask.sum { background: transparent; border-style: dashed; border-color: var(--rule-2); }
+  .ptask.sum ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+  .ptask.sum li { display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: baseline; font-size: 20px; color: var(--ink-2); }
+  .tasks2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 34px; }
+  .tcard { background: var(--card); border: 1px solid var(--rule); border-radius: 16px; padding: 26px 30px; display: grid; gap: 16px; align-content: start; }
+  .tcard .hd { display: grid; gap: 12px; justify-items: start; }
+  .tcard h3 { font: 400 40px/1.05 var(--serif); margin: 0; }
+  .tcard > p { margin: 0; font-size: 20px; line-height: 1.5; color: var(--ink-2); }
+  .tcard .ex { border-top: 1px solid var(--rule); padding-top: 16px; display: grid; gap: 8px; }
+  .tcard .lbl { font: 500 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .tcard .s { font: 400 24px/1.4 var(--serif); margin: 0 0 6px; }
+  .tcard .ty { font: 500 16px/1 var(--mono); color: var(--accent); }
+  .tcard .tr { font: 500 13px/1.3 var(--mono); color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; }
+  .tcard .tr.yes { color: var(--ok); }
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .tags span { display: grid; justify-items: center; gap: 4px; border: 1px solid var(--rule-2); border-radius: 8px; padding: 6px 12px; font: 400 22px/1.1 var(--serif); }
+  .tags span.hl { border-color: var(--accent); background: var(--accent-soft); }
+  .tags small { font: 500 12px/1 var(--mono); color: var(--muted); }
+  .tags span.hl small { color: var(--accent); }
+</style>
+<script>
+  (function () { var t = null;
+    try { t = new URLSearchParams(location.search).get('theme'); } catch (e) {}
+    if (t !== 'dark' && t !== 'light') { try { t = localStorage.getItem('tutor-deck-theme'); } catch (e) {} }
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); })();
+</script>
+</head>
+<body>
+<div class="viewport">
+  <div class="stage" id="stage">
+
+    <!-- 1 · PORTADA -->
+    <section class="slide" data-section="0">
+      <div class="cover">
+        <div>
+          <p class="tag">Proyecto final · PLN · Entrega 1</p>
+          <h1>Un tutor que <em>corrige</em> y explica</h1>
+          <p class="lede">Corrige textos en inglés de estudiantes hispanohablantes, dice qué tipo de error cometieron y lo explica en español.</p>
+          <div class="keys-hint"><span><kbd>→</kbd>avanzar</span><span><kbd>F</kbd>pantalla completa</span><span><kbd>N</kbd>notas</span><span><kbd>T</kbd>tema</span></div>
+        </div>
+        <ol class="toc" id="toc"></ol>
+      </div>
+      <aside class="notes"><ul><li>Cuatro partes, en el orden de la rúbrica: usuario, mercado, tarea de PLN, y datos con pipeline.</li></ul></aside>
+    </section>
+
+    <!-- 2 · USUARIO FINAL -->
+    <section class="slide" data-section="0">
+      <p class="kicker">Relevancia del proyecto <span class="step">· usuario final</span></p>
+      <h2>El estudiante que tiene que certificar inglés</h2>
+      <div class="persona">
+        <blockquote class="quote-big">“Escribo en inglés, pero nadie me dice qué está mal ni por qué.”</blockquote>
+        <ul class="pains">
+          <li><b>Necesita B1 o B2 para graduarse</b>O se prepara para la prueba de inglés de Saber Pro o el IELTS.</li>
+          <li><b>Practica la escritura sin retroalimentación</b>Nadie revisa sus textos con detalle y una clase particular es cara.</li>
+          <li><b>Comete errores de hispanohablante</b>Omite el sujeto, traduce preposiciones al pie de la letra, confunde tiempos verbales.</li>
+        </ul>
+      </div>
+      <aside class="notes"><ul><li>Usuario final: estudiante universitario colombiano con requisito de inglés para graduarse.</li><li>El dolor: practica sola, sin saber qué corrige ni por qué.</li></ul></aside>
+    </section>
+
+    <!-- 3 · DESCRIPCIÓN DE MERCADO -->
+    <section class="slide" data-section="1">
+      <p class="kicker">Descripción de mercado <span class="step">· la aplicación web</span></p>
+      <h2>Un profesor que revisa cada práctica</h2>
+      <div class="market">
+        <p class="para">Una página web donde el estudiante pega un párrafo que escribió en inglés y, en segundos, ve su texto corregido: lo que sobra <del>tachado</del> y lo que falta <ins>en verde</ins>. Junto a cada cambio aparece qué tipo de error fue y una explicación corta <em>en español</em>, pensada para los errores que cometemos los hispanohablantes. Así practica con retroalimentación cada vez que escribe, sin esperar a que alguien revise su texto.</p>
+        <div class="mock mini">
+          <div class="bar"><span>Tutor de escritura</span><span>6 correcciones</span></div>
+          <div class="body">
+            <div class="pane">
+              <p class="essay">This technology has <del>help</del> <ins>helped</ins> to <del>made</del> <ins>make</ins> my life easier, but like <del>everithing</del> <ins>everything</ins> <ins>it has</ins> had some negative <del>thing</del> <ins>aspects</ins>.</p>
+            </div>
+            <div class="pane">
+              <ul class="errs">
+                <li><span class="t">VERB:FORM · help → helped</span>Después de <i>has</i> va el participio.</li>
+                <li><span class="t">M:PRON · + it</span>En español se omite el sujeto; en inglés es obligatorio.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes"><ul><li>Un solo párrafo, en lenguaje común, como pide la rúbrica.</li><li>Diferencia con Grammarly: explica en español y se enfoca en los errores de hispanohablantes.</li></ul></aside>
+    </section>
+
+    <!-- 4 · TAREA DE PLN -->
+    <section class="slide" data-section="2">
+      <p class="kicker">Tarea de PLN <span class="step">· dos tareas del curso</span></p>
+      <h2>Corregir el texto y saber qué error fue</h2>
+      <div class="tasks2">
+        <div class="tcard">
+          <div class="hd"><span class="pill ok">Principal</span><h3>Generación de lenguaje</h3></div>
+          <p>Corrección gramatical de secuencia a secuencia: el modelo recibe una oración con errores y genera la misma oración corregida, cambiando solo lo necesario.</p>
+          <div class="ex">
+            <span class="lbl">Entrada</span>
+            <p class="s">I decide to <del>do</del> shopping to try to <del>cher</del> myself up.</p>
+            <span class="lbl">Salida generada</span>
+            <p class="s">I decide to <ins>go</ins> shopping to try to <ins>cheer</ins> myself up.</p>
+          </div>
+          <span class="tr yes">Se entrena · afinar BART-base</span>
+        </div>
+        <div class="tcard">
+          <div class="hd"><span class="pill info">Complementaria</span><h3>POS Tagging</h3></div>
+          <p>Etiqueta cada palabra con su categoría gramatical y su lema. Con esas etiquetas, ERRANT decide qué tipo de error corrigió el modelo, y ese tipo elige la explicación en español.</p>
+          <div class="ex">
+            <span class="lbl">Etiqueta POS · lema</span>
+            <div class="tags"><span>has<small>AUX</small></span><span class="hl">help<small>VERB · help</small></span><span>to<small>PART</small></span><span class="hl">made<small>VERB · make</small></span></div>
+            <span class="lbl">Tipo de error</span>
+            <p class="s"><i>help</i> → <i>helped</i>: mismo lema, otra forma = <b class="ty">VERB:FORM</b></p>
+          </div>
+          <span class="tr">Ya entrenado · spaCy en_core_web_sm + ERRANT</span>
+        </div>
+      </div>
+      <aside class="notes"><ul><li>Tarea principal: corrección gramatical como generación de lenguaje. Es la única que se entrena.</li><li>Tarea complementaria: POS tagging, que convierte la corrección en un tipo de error y en una explicación.</li></ul></aside>
+    </section>
+
+    <!-- 5 · DATOS INICIALES -->
+    <section class="slide" data-section="3">
+      <p class="kicker">Datos iniciales <span class="step">· verificados y descargados</span></p>
+      <h2>Dos corpus de Cambridge con cada error anotado</h2>
+      <div class="stats-row">
+        <div><b>62.658</b><span>pares para entrenar<br>el corrector</span></div>
+        <div><b>108.064</b><span>correcciones anotadas<br>con su tipo</span></div>
+        <div><b>5.769</b><span>textos de<br>estudiantes</span></div>
+        <div><b>398</b><span>textos escritos por<br>hispanohablantes</span></div>
+      </div>
+      <table class="t">
+        <tr><th>Dataset</th><th>Contenido</th><th>Uso</th><th>Licencia</th></tr>
+        <tr><td><b>FCE v2.1</b> · Yannakoudakis et al., 2011</td><td class="num">2.469 textos · 33.236 oraciones · L1 del autor</td><td>Entrenar y evaluar la corrección</td><td>No comercial</td></tr>
+        <tr><td><b>W&amp;I + LOCNESS v2.1</b> · Bryant et al., 2019</td><td class="num">3.300 textos · 38.692 oraciones · varios niveles</td><td>Entrenar la corrección</td><td>No comercial</td></tr>
+        <tr><td><b>ERRANT v3.0.2</b></td><td>Herramienta: alinea y clasifica errores con spaCy</td><td>Tipos de error y métrica F0.5</td><td>MIT</td></tr>
+      </table>
+      <aside class="notes"><ul><li>Ambos corpus se descargan sin registro desde la página de BEA-2019.</li><li>FCE registra la lengua materna del autor: 398 textos son de hispanohablantes, nuestro usuario.</li></ul></aside>
+    </section>
+
+    <!-- 6 · FORMATO M2 -->
+    <section class="slide" data-section="3">
+      <p class="kicker">Datos iniciales <span class="step">· así vienen los archivos</span></p>
+      <h2>Formato M2: la oración y cada corrección</h2>
+      <div class="m2">
+        <div class="term"><div class="tb"><i></i><i></i><i></i><span>fce.train.gold.bea19.m2</span></div>
+<pre><span class="s">S This technology has help to made my life easier and more exciting , but like everithing had some negative thing .</span>
+<span class="a">A</span> <span class="y">3 4</span><span class="a">|||</span><span class="p">R:VERB:FORM</span><span class="a">|||</span><span class="g">helped</span><span class="a">|||REQUIRED|||-NONE-|||0</span>
+<span class="a">A</span> <span class="y">5 6</span><span class="a">|||</span><span class="p">R:VERB:FORM</span><span class="a">|||</span><span class="g">make</span><span class="a">|||REQUIRED|||-NONE-|||0</span>
+<span class="a">A</span> <span class="y">15 16</span><span class="a">|||</span><span class="p">R:SPELL</span><span class="a">|||</span><span class="g">everything</span><span class="a">|||REQUIRED|||-NONE-|||0</span>
+<span class="a">A</span> <span class="y">16 16</span><span class="a">|||</span><span class="p">M:PRON</span><span class="a">|||</span><span class="g">it</span><span class="a">|||REQUIRED|||-NONE-|||0</span>
+<span class="a">A</span> <span class="y">16 16</span><span class="a">|||</span><span class="p">M:VERB:TENSE</span><span class="a">|||</span><span class="g">has</span><span class="a">|||REQUIRED|||-NONE-|||0</span>
+<span class="a">A</span> <span class="y">19 20</span><span class="a">|||</span><span class="p">R:NOUN</span><span class="a">|||</span><span class="g">aspects</span><span class="a">|||REQUIRED|||-NONE-|||0</span></pre>
+        </div>
+        <ol class="steps">
+          <li><b>S</b> es la oración original, ya separada en tokens.</li>
+          <li><b>A</b> es una corrección: dónde empieza y termina, en posiciones de token.</li>
+          <li>El <b>tipo de error</b>: R reemplazar, M falta, U sobra, más la categoría gramatical.</li>
+          <li>El <b>texto correcto</b> que va en esa posición.</li>
+        </ol>
+      </div>
+      <p class="fine">Bloque real de FCE, escrito por un hispanohablante. Aplicando las líneas A sobre la S sale la oración corregida.</p>
+      <aside class="notes"><ul><li>Los datos iniciales no vienen como pares: hay que reconstruir la oración corregida aplicando cada línea A.</li></ul></aside>
+    </section>
+
+    <!-- 7 · TABLA DE MUESTRA -->
+    <section class="slide" data-section="3">
+      <p class="kicker">Datos iniciales <span class="step">· tabla de muestra</span></p>
+      <h2>Oraciones reales de hispanohablantes</h2>
+      <table class="t">
+        <tr><th>Oración original (FCE, L1 español)</th><th>Corrección</th><th>Tipo ERRANT</th></tr>
+        <tr><td class="sent">And all people <del>know</del> that CO2 is a very dangerous gas for all <del>kind</del> of animals.</td><td>everyone knows … all kinds</td><td class="ty">OTHER · VERB:SVA · NOUN:NUM</td></tr>
+        <tr><td class="sent">But you can't imagine <del>who was the singer</del>, it was Sting</td><td>who the singer was</td><td class="ty">WO (orden)</td></tr>
+        <tr><td class="sent">It is <del>like</del> if they lose their <del>concience</del> while they are shopping.</td><td>as if … conscience</td><td class="ty">PREP · SPELL</td></tr>
+        <tr><td class="sent">I decide to <del>do</del> shopping to try to <del>cher</del> myself up.</td><td>go shopping … cheer</td><td class="ty">VERB · SPELL</td></tr>
+        <tr><td class="sent">This technology has <del>help</del> to <del>made</del> my life easier</td><td>helped … make</td><td class="ty">VERB:FORM ×2</td></tr>
+      </table>
+      <p class="fine">34,4% de las oraciones no tienen errores · 1,72 errores por oración · el 99% cabe en 60 tokens.</p>
+      <aside class="notes"><ul><li>Errores típicos de hispanohablante: orden de la pregunta indirecta, "like if" por "as if", concordancia sujeto-verbo.</li></ul></aside>
+    </section>
+
+    <!-- 8 · DIAGRAMA -->
+    <section class="slide slide--diagram" data-section="3">
+      <header class="dhead"><div><p class="kicker">Pipeline de PLN <span class="step">· de punta a punta</span></p><h2>De los corpus a la corrección explicada</h2></div><p class="dhint"><kbd>Play story</kbd> recorre los capítulos · clic fuera del diagrama para volver a usar <kbd>←</kbd><kbd>→</kbd></p></header>
+      <div class="frame"><span class="loading">Cargando diagrama…</span><iframe data-src="01-pipeline.html" title="Diagrama del pipeline de PLN"></iframe></div>
+      <aside class="notes"><ul><li>Un solo camino: corpus → pares → BPE → BART afinado → ERRANT → explicación → app, y la evaluación con F0.5.</li><li>Las dos láminas siguientes explican cada tarea en un párrafo.</li></ul></aside>
+    </section>
+
+    <!-- 9 · PIPELINE 1–4 -->
+    <section class="slide" data-section="3">
+      <p class="kicker">Pipeline de PLN <span class="step">· tareas 1 a 4</span></p>
+      <h2>De los archivos al texto corregido</h2>
+      <div class="pipe">
+        <div class="ptask"><div class="hd"><span class="no">01</span><h3>Preparación y análisis</h3><span class="pill mute">Sin modelo</span></div>
+          <p>Leemos los archivos M2 de FCE y W&amp;I y aplicamos cada corrección para obtener <b>62.658 pares</b> de oración original y oración corregida. El análisis exploratorio fija los parámetros: conservamos el 34,4% de oraciones sin errores para que el modelo aprenda a no tocarlas, revisamos los casos extremos y separamos los textos de hispanohablantes para evaluarlos aparte.</p></div>
+        <div class="ptask"><div class="hd"><span class="no">02</span><h3>Tokenización</h3><span class="pill mute">Tal cual</span></div>
+          <p>Cada oración se convierte en una lista de números con el tokenizador de BART, que usa <b>BPE a nivel de byte</b>. Las palabras mal escritas no quedan como desconocidas: “everithing” se parte en <code>ever</code> + <code>ithing</code>. Como el 99% de las oraciones cabe en 60 tokens, fijamos un máximo de 128 y solo se recorta el 0,04%.</p></div>
+        <div class="ptask"><div class="hd"><span class="no">03</span><h3>Corrección</h3><span class="pill ok">Generación · afinado</span></div>
+          <p>Es el corazón del sistema. Partimos de <b>BART-base</b>, un modelo encoder-decoder preentrenado para reconstruir texto dañado, y lo afinamos con los pares: la oración original es la entrada y la corregida, la respuesta esperada. El modelo escribe la oración completa de nuevo, token por token. No lo entrenamos desde cero porque 62 mil pares no alcanzan para aprender el idioma.</p></div>
+        <div class="ptask"><div class="hd"><span class="no">04</span><h3>Tipo de error</h3><span class="pill info">POS tagging · tal cual</span></div>
+          <p><b>ERRANT</b> alinea la oración original con la corregida y, con las categorías gramaticales (POS) y los lemas de spaCy, clasifica cada cambio: si <i>help</i> pasa a <i>helped</i>, mismo lema y otra forma, es VERB:FORM; si falta un pronombre, es M:PRON. Ese tipo es lo que le permite al tutor explicar el error y no solo corregirlo.</p></div>
+      </div>
+      <aside class="notes"><ul><li>Un párrafo por tarea, como pide la rúbrica.</li><li>Solo la tarea 3 entrena: afinar BART.</li></ul></aside>
+    </section>
+
+    <!-- 10 · PIPELINE 5–7 -->
+    <section class="slide" data-section="3">
+      <p class="kicker">Pipeline de PLN <span class="step">· tareas 5 y 6</span></p>
+      <h2>Explicar y medir</h2>
+      <div class="pipe">
+        <div class="ptask"><div class="hd"><span class="no">05</span><h3>Explicación en español</h3><span class="pill mute">Plantillas</span></div>
+          <p>Cada tipo de error se asocia a una plantilla en español con la regla y el ejemplo del propio estudiante. Priorizamos los tipos más frecuentes en hispanohablantes según el análisis: <b>ortografía, puntuación y preposiciones</b>. Los tipos poco frecuentes reciben una frase genérica con el cambio.</p></div>
+        <div class="ptask"><div class="hd"><span class="no">06</span><h3>Evaluación</h3><span class="pill">Verificación</span></div>
+          <p>El corrector se mide con <b>F0.5 de ERRANT</b> sobre el test de FCE, que pesa más la precisión porque marcar como error algo correcto confunde al estudiante. Lo reportamos por tipo de error y aparte para los textos de hispanohablantes, y lo comparamos con dos líneas base: no corregir nada y un LLM sin entrenar.</p></div>
+        <div class="ptask sum" style="grid-column:1 / -1"><div class="hd"><h3>Qué se entrena</h3></div>
+          <ul>
+            <li><span class="pill ok">Afinado</span><span>BART-base, el corrector: el único modelo que se entrena.</span></li>
+            <li><span class="pill mute">Tal cual</span><span>Tokenizador BPE, spaCy y ERRANT, ya entrenados.</span></li>
+            <li><span class="pill mute">Reglas</span><span>Plantillas de explicación en español, escritas por nosotros.</span></li>
+          </ul></div>
+      </div>
+      <aside class="notes"><ul><li>Un solo modelo se afina: el corrector. El resto se usa ya entrenado.</li></ul></aside>
+    </section>
+
+    <!-- 11 · CIERRE -->
+    <section class="slide" data-section="3">
+      <div class="end">
+        <div><p class="kicker">Resumen</p><h2>Corregir para que el estudiante <em>entienda</em></h2></div>
+        <ul class="recap">
+          <li><span>Usuario final</span>Estudiante colombiano que debe certificar inglés.</li>
+          <li><span>Mercado</span>Una web que corrige y explica en español.</li>
+          <li><span>Tarea de PLN</span>Generación de lenguaje para corregir y POS tagging para tipificar.</li>
+          <li><span>Datos y pipeline</span>FCE y W&amp;I → BPE → BART afinado → ERRANT → explicación → evaluación.</li>
+        </ul>
+      </div>
+      <aside class="notes"><ul><li>¿Preguntas?</li></ul></aside>
+    </section>
+
+    <div class="progress" id="progress"></div>
+    <nav class="chrome" aria-label="Navegación">
+      <span class="brand"><b>Tutor</b> · PLN</span>
+      <div class="sections" id="sections"></div>
+      <span class="counter" id="counter">1 / 11</span>
+      <div class="nav"><button type="button" id="prev" aria-label="Anterior">‹</button><button type="button" id="next" aria-label="Siguiente">›</button></div>
+    </nav>
+  </div>
+</div>
+
+<div class="notes-panel" id="notes" hidden><div class="hd"><span id="notes-title">Notas</span><span>N para ocultar</span></div><div id="notes-body"></div></div>
+<div class="focus-hint" id="focus-hint" hidden>Estás dentro del diagrama · clic aquí para volver a usar ← →</div>
+
+<script>
+(function () {
+  var SECTIONS = ['Usuario final', 'Mercado', 'Tarea de PLN', 'Datos y pipeline'];
+  var WEIGHTS = ['20%', '20%', '20%', '40%'];
+  var root = document.documentElement, stage = document.getElementById('stage');
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var cur = 0;
+
+  function theme() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t;
+    return window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function fit() { stage.style.setProperty('--s', Math.min(window.innerWidth / 1600, window.innerHeight / 900)); }
+  window.addEventListener('resize', fit); fit();
+
+  var firstOf = {};
+  slides.forEach(function (sl, i) { var k = sl.dataset.section; if (!(k in firstOf)) firstOf[k] = i; });
+  var secBox = document.getElementById('sections'), toc = document.getElementById('toc');
+  SECTIONS.forEach(function (name, k) {
+    if (!(k in firstOf)) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.innerHTML = '<span class="n">' + (k + 1) + '</span>' + name;
+    b.addEventListener('click', function () { go(firstOf[k]); });
+    secBox.appendChild(b);
+    var count = slides.filter(function (s) { return s.dataset.section === String(k); }).length;
+    var li = document.createElement('li');
+    li.innerHTML = '<span class="n">0' + (k + 1) + '</span><span class="t">' + name + '</span><span class="d">' + WEIGHTS[k] + ' · ' + count + (count === 1 ? ' lámina' : ' láminas') + '</span>';
+    li.addEventListener('click', function () { go(firstOf[k]); });
+    toc.appendChild(li);
+  });
+
+  function loadFrame(sl) {
+    var f = sl && sl.querySelector('iframe[data-src]');
+    if (!f) return;
+    var want = f.dataset.src + '?present=1&theme=' + theme();
+    if (f.getAttribute('src') !== want) {
+      f.addEventListener('load', function () { var l = sl.querySelector('.loading'); if (l) l.hidden = true; }, { once: true });
+      f.setAttribute('src', want);
+    }
+  }
+
+  function go(i) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    slides[cur].classList.remove('active');
+    cur = i; slides[cur].classList.add('active');
+    loadFrame(slides[cur]); loadFrame(slides[cur + 1]);
+    document.getElementById('counter').textContent = (cur + 1) + ' / ' + slides.length;
+    document.getElementById('progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+    var sec = slides[cur].dataset.section;
+    Array.prototype.forEach.call(secBox.children, function (b, k) { b.setAttribute('aria-current', String(String(k) === sec)); });
+    var n = slides[cur].querySelector('.notes');
+    document.getElementById('notes-title').textContent = 'Notas · lámina ' + (cur + 1) + ' · ' + SECTIONS[+sec];
+    document.getElementById('notes-body').innerHTML = n ? n.innerHTML : '<p>Sin notas.</p>';
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {}
+  }
+
+  document.getElementById('prev').addEventListener('click', function () { go(cur - 1); });
+  document.getElementById('next').addEventListener('click', function () { go(cur + 1); });
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); go(cur + 1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    else if (k === 'Home') go(0);
+    else if (k === 'End') go(slides.length - 1);
+    else if (k === 'f' || k === 'F') { try { if (!document.fullscreenElement) root.requestFullscreen(); else document.exitFullscreen(); } catch (err) {} }
+    else if (k === 'n' || k === 'N') { var p = document.getElementById('notes'); p.hidden = !p.hidden; }
+    else if (k === 't' || k === 'T') {
+      var next = theme() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('tutor-deck-theme', next); } catch (err) {}
+      document.querySelectorAll('iframe[src]').forEach(function (f) { f.setAttribute('src', f.dataset.src + '?present=1&theme=' + next); });
+    }
+  });
+
+  var hint = document.getElementById('focus-hint');
+  window.addEventListener('blur', function () { setTimeout(function () { if (document.activeElement && document.activeElement.tagName === 'IFRAME') hint.hidden = false; }, 0); });
+  window.addEventListener('focus', function () { hint.hidden = true; });
+  hint.addEventListener('click', function () { if (document.activeElement) document.activeElement.blur(); window.focus(); hint.hidden = true; });
+
+  var start = parseInt((location.hash || '').replace('#', ''), 10);
+  slides[0].classList.add('active');
+  go(isNaN(start) ? 0 : start - 1);
+})();
+</script>
+</body>
+</html>

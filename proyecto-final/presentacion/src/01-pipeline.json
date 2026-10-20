@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "De los corpus de Cambridge a la corrección explicada",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "datos",
+        "label": "Datos y pares paralelos",
+        "focus": [
+          "fce",
+          "wi",
+          "pares"
+        ],
+        "note": "FCE y W&I traen cada corrección en M2. Aplicándolas salen 62.658 pares original → corregida."
+      },
+      {
+        "id": "tokenizar",
+        "label": "Tokenizar con BPE",
+        "focus": [
+          "pares",
+          "bpe"
+        ],
+        "note": "El tokenizador de BART convierte cada oración en IDs. El 99% cabe en 60 tokens: max_length=128."
+      },
+      {
+        "id": "corregir",
+        "label": "Afinar el corrector",
+        "focus": [
+          "bpe",
+          "bart"
+        ],
+        "note": "Generación de lenguaje: BART-base aprende a generar la oración corregida a partir de la original."
+      },
+      {
+        "id": "explicar",
+        "label": "Tipificar y explicar",
+        "focus": [
+          "bart",
+          "errant",
+          "explic",
+          "app"
+        ],
+        "note": "POS tagging: ERRANT usa las etiquetas y lemas de spaCy para dar el tipo de error; cada tipo tiene una explicación en español."
+      },
+      {
+        "id": "medir",
+        "label": "Medir",
+        "focus": [
+          "errant",
+          "eval"
+        ],
+        "note": "F0.5 de ERRANT sobre el test de FCE, por tipo de error y para hispanohablantes."
+      }
+    ],
+    "legend": {
+      "entries": {
+        "emphasis": {
+          "label": "camino del corrector"
+        },
+        "database": {
+          "label": "corpus"
+        },
+        "default": {
+          "label": "flujo de datos"
+        }
+      }
+    },
+    "viewBox": [
+      1080,
+      520
+    ]
+  },
+  "stages": [
+    {
+      "label": "Corpus"
+    },
+    {
+      "label": "Preparar"
+    },
+    {
+      "label": "Tokenizar"
+    },
+    {
+      "label": "Afinar y tipificar"
+    },
+    {
+      "label": "Explicar y medir"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "fce",
+      "type": "database",
+      "label": "FCE v2.1",
+      "sublabel": "M2 · 33.236 oraciones",
+      "stage": 0,
+      "row": 0,
+      "tag": "398 textos L1 español",
+      "height": 58
+    },
+    {
+      "id": "wi",
+      "type": "database",
+      "label": "W&I + LOCNESS",
+      "sublabel": "M2 · 38.692 oraciones",
+      "stage": 0,
+      "row": 2,
+      "tag": "3.300 textos",
+      "height": 58
+    },
+    {
+      "id": "pares",
+      "type": "backend",
+      "label": "Pares paralelos",
+      "sublabel": "original → corregida",
+      "stage": 1,
+      "row": 0,
+      "tag": "62.658 pares",
+      "height": 58
+    },
+    {
+      "id": "bpe",
+      "type": "backend",
+      "label": "Tokenizador BPE",
+      "sublabel": "bart-base · byte-level",
+      "stage": 2,
+      "row": 0,
+      "tag": "max_length 128",
+      "height": 58
+    },
+    {
+      "id": "bart",
+      "type": "backend",
+      "label": "Corrector BART",
+      "sublabel": "fine-tuning seq2seq",
+      "stage": 3,
+      "row": 0,
+      "tag": "Generación de lenguaje",
+      "height": 58
+    },
+    {
+      "id": "errant",
+      "type": "backend",
+      "label": "ERRANT + spaCy",
+      "sublabel": "POS + lemas",
+      "stage": 3,
+      "row": 1,
+      "tag": "POS tagging",
+      "height": 58
+    },
+    {
+      "id": "explic",
+      "type": "backend",
+      "label": "Explicación",
+      "sublabel": "plantillas en español",
+      "stage": 4,
+      "row": 1,
+      "tag": "por tipo de error",
+      "height": 58,
+      "yOffset": -7
+    },
+    {
+      "id": "app",
+      "type": "frontend",
+      "label": "App web",
+      "sublabel": "Gradio",
+      "stage": 4,
+      "row": 0,
+      "tag": "demo",
+      "height": 58
+    },
+    {
+      "id": "eval",
+      "type": "security",
+      "label": "Evaluación",
+      "sublabel": "F0.5 · por tipo",
+      "stage": 4,
+      "row": 2,
+      "tag": "test FCE",
+      "height": 58
+    }
+  ],
+  "flows": [
+    {
+      "id": "fce-pares",
+      "from": "fce",
+      "to": "pares",
+      "label": "correcciones",
+      "classification": "M2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "wi-pares",
+      "from": "wi",
+      "to": "pares",
+      "label": "correcciones",
+      "classification": "M2",
+      "variant": "default",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "via": [
+        [
+          100,
+          271
+        ],
+        [
+          315,
+          271
+        ]
+      ]
+    },
+    {
+      "id": "pares-bpe",
+      "from": "pares",
+      "to": "bpe",
+      "label": "src → tgt",
+      "classification": "texto",
+      "variant": "emphasis"
+    },
+    {
+      "id": "bpe-bart",
+      "from": "bpe",
+      "to": "bart",
+      "label": "input_ids + labels",
+      "classification": "IDs",
+      "variant": "emphasis"
+    },
+    {
+      "id": "bart-errant",
+      "from": "bart",
+      "to": "errant",
+      "label": "corregida",
+      "classification": "oración",
+      "variant": "emphasis",
+      "labelDy": 24
+    },
+    {
+      "id": "errant-explic",
+      "from": "errant",
+      "to": "explic",
+      "label": "tipo",
+      "classification": "VERB:FORM…",
+      "variant": "emphasis"
+    },
+    {
+      "id": "explic-app",
+      "from": "explic",
+      "to": "app",
+      "label": "corrección explicada",
+      "classification": "texto",
+      "variant": "emphasis",
+      "labelDy": -10
+    },
+    {
+      "id": "errant-eval",
+      "from": "errant",
+      "to": "eval",
+      "label": "hyp.m2",
+      "classification": "F0.5",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Lo que entra",
+      "items": [
+        "Dos corpus de Cambridge con cada error corregido y clasificado",
+        "62.658 pares de oración original y oración corregida",
+        "398 textos escritos por hispanohablantes, para evaluar con nuestro usuario"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Decisiones medidas",
+      "items": [
+        "34,4% de oraciones sin errores: se quedan para aprender a no tocar",
+        "El 99% cabe en 60 tokens: max_length=128 pierde el 0,04%",
+        "Afinar BART en vez de entrenar desde cero: 62k pares no alcanzan"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Lo que se mide",
+      "items": [
+        "F0.5 de ERRANT: corregir algo correcto es peor que omitir un error",
+        "F0.5 aparte para hispanohablantes y por tipo de error",
+        "Líneas base: no corregir nada y un LLM sin entrenar"
+      ]
+    }
+  ]
+}
