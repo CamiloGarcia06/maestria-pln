@@ -1,6 +1,5 @@
-# Python 3.12 (spaCy aún no soporta 3.14):
-#   uv venv --python 3.12 .venv && uv pip install -r requirements.txt
-#   .venv/bin/python -m spacy download en_core_web_sm
+# Dependencias de la imagen de Jupyter (infra/Dockerfile, Python 3.12: spaCy aún no soporta 3.14).
+# Se instalan al construir: make build
 errant==3.0.2
 spacy==3.8.16
 pandas

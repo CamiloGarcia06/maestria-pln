@@ -6,3 +6,6 @@ __pycache__/
 
 # Corpus de BEA-2019: la licencia no permite redistribuirlos (scripts/descargar_datos.sh)
 proyecto-final/datos/crudos/
+
+# Token y configuración local de Jupyter (make env)
+proyecto-final/infra/.env
