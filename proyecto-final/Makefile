@@ -3,7 +3,7 @@ COMPOSE := docker compose --env-file infra/.env -f infra/compose.yaml
 PORT    ?= 8888
 
 .DEFAULT_GOAL := help
-.PHONY: help env build up down restart logs status url shell gpu datos test analisis
+.PHONY: help env build up down restart logs status url shell gpu datos test analisis preparar
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
@@ -55,3 +55,6 @@ test: ## Corre los tests de src/
 analisis: ## Ejecuta los notebooks de análisis en orden (el 02 usa las tablas del 01)
 	$(COMPOSE) exec jupyter jupyter nbconvert --to notebook --execute --inplace \
 	  --ExecutePreprocessor.timeout=1800 notebooks/01_analisis_datos.ipynb notebooks/02_analisis_tareas.ipynb
+
+preparar: ## Genera train.jsonl y los conjuntos de evaluación en datos/procesados/entrenamiento/
+	$(COMPOSE) exec jupyter python src/preparar.py

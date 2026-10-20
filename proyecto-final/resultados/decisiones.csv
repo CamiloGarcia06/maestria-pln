@@ -4,6 +4,7 @@ Oraciones sin error,se conservan,34.4% de train: enseñan a no tocar lo que est�
 Pares con UNK en train,se excluyen del entrenamiento,"2,779 pares (4.4%) cuyo destino conserva un error marcado"
 Pares duplicados exactos en train,se deduplican,"3,636 pares"
 Train,"FCE train + W&I train (A, B, C)","62,658 pares antes de filtrar"
-Dev,"FCE dev + W&I dev (A, B, C)","5,587 oraciones; para elegir checkpoint"
+Dev (selección),"W&I dev (A, B, C) + FCE dev sin hispanohablantes","5,054 oraciones; para elegir checkpoint"
+Hispanohablantes en dev,"FCE dev · es, evaluado aparte",533 oraciones (44 textos); fuera de la selección para no sesgarla
 Test,"FCE test, con el subconjunto es aparte","2,695 oraciones; 224 de hispanohablantes (20 textos)"
 LOCNESS,solo referencia,988 oraciones de nativos
