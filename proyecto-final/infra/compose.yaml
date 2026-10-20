@@ -13,6 +13,8 @@ services:
     restart: unless-stopped
     environment:
       JUPYTER_TOKEN: ${JUPYTER_TOKEN:?falta JUPYTER_TOKEN en infra/.env}
+    # Los workers del DataLoader de PyTorch pasan los lotes por memoria compartida; Docker da 64 MB
+    shm_size: 8gb
     # Solo en la IP de Tailscale: Jupyter ejecuta código, no debe quedar abierto en la LAN
     ports:
       - "${JUPYTER_BIND}:${JUPYTER_PORT:-8888}:8888"

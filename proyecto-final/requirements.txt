@@ -13,3 +13,7 @@ scipy
 pyarrow
 nbconvert
 pytest
+# Entrenamiento de BART-base en GPU (el wheel de PyPI trae CUDA incluido)
+torch
+accelerate
+datasets

@@ -40,8 +40,11 @@ url: infra/.env ## Imprime la URL para abrir desde el navegador
 shell: ## Abre una terminal dentro del contenedor
 	$(COMPOSE) exec jupyter bash
 
-gpu: ## Comprueba que el contenedor ve la GPU
+gpu: ## Comprueba que el contenedor ve la GPU y que PyTorch la usa (bf16)
 	$(COMPOSE) exec jupyter nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv
+	$(COMPOSE) exec jupyter python -c "import torch; x = torch.randn(4096, 4096, device='cuda', dtype=torch.bfloat16); \
+	  print('torch', torch.__version__, '· CUDA', torch.version.cuda, '·', torch.cuda.get_device_name(0), \
+	  '· bf16', torch.cuda.is_bf16_supported(), '· matmul ok', bool((x @ x).isfinite().all()))"
 
 datos: ## Descarga FCE y W&I+LOCNESS en datos/crudos/
 	./scripts/descargar_datos.sh

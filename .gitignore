@@ -12,3 +12,6 @@ proyecto-final/infra/.env
 
 # Tablas derivadas de los corpus: misma licencia que datos/crudos/
 proyecto-final/datos/procesados/
+
+# Checkpoints de BART (~560 MB cada uno): viven en el disco de la torre, no en GitHub
+proyecto-final/modelos/
