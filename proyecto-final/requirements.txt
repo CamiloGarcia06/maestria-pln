@@ -7,3 +7,9 @@ matplotlib
 seaborn
 jupyterlab
 ipykernel
+# Análisis: tokenizador de BART (sin torch), pruebas estadísticas, parquet y tests
+transformers
+scipy
+pyarrow
+nbconvert
+pytest

@@ -3,7 +3,7 @@ COMPOSE := docker compose --env-file infra/.env -f infra/compose.yaml
 PORT    ?= 8888
 
 .DEFAULT_GOAL := help
-.PHONY: help env build up down restart logs status url shell gpu datos
+.PHONY: help env build up down restart logs status url shell gpu datos test analisis
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
@@ -45,3 +45,9 @@ gpu: ## Comprueba que el contenedor ve la GPU
 
 datos: ## Descarga FCE y W&I+LOCNESS en datos/crudos/
 	./scripts/descargar_datos.sh
+
+test: ## Corre los tests de src/
+	$(COMPOSE) exec jupyter pytest -q
+
+analisis: ## Ejecuta el notebook de análisis de punta a punta y guarda sus salidas
+	$(COMPOSE) exec jupyter jupyter nbconvert --to notebook --execute --inplace notebooks/01_analisis_datos.ipynb

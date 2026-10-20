@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt \
 
 RUN groupadd -g "$GID" pln && useradd -m -u "$UID" -g "$GID" pln
 USER pln
+# Punto de montaje del volumen hf-cache; si no existe en la imagen, Docker lo crea como root
+RUN mkdir -p /home/pln/.cache/huggingface
 WORKDIR /work
 
 EXPOSE 8888

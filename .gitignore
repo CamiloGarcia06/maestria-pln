@@ -9,3 +9,6 @@ proyecto-final/datos/crudos/
 
 # Token y configuración local de Jupyter (make env)
 proyecto-final/infra/.env
+
+# Tablas derivadas de los corpus: misma licencia que datos/crudos/
+proyecto-final/datos/procesados/
