@@ -9,7 +9,7 @@ help: ## Muestra esta ayuda
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
 
 infra/.env:
-	@printf 'JUPYTER_TOKEN=%s\nJUPYTER_BIND=%s\nJUPYTER_PORT=%s\nUID=%s\nGID=%s\n' \
+	@printf 'JUPYTER_TOKEN=%s\nJUPYTER_BIND=%s\nJUPYTER_PORT=%s\nHOST_UID=%s\nHOST_GID=%s\n' \
 	  "$$(openssl rand -hex 24)" "$$(tailscale ip -4)" "$(PORT)" "$$(id -u)" "$$(id -g)" > $@
 	@echo "Creado $@ (token nuevo)"
 
@@ -35,7 +35,7 @@ status: ## Estado del contenedor
 	$(COMPOSE) ps
 
 url: infra/.env ## Imprime la URL para abrir desde el navegador
-	@. ./infra/.env && echo "http://$$JUPYTER_BIND:$$JUPYTER_PORT/lab?token=$$JUPYTER_TOKEN"
+	@v() { sed -n "s/^$$1=//p" infra/.env; }; echo "http://$$(v JUPYTER_BIND):$$(v JUPYTER_PORT)/lab?token=$$(v JUPYTER_TOKEN)"
 
 shell: ## Abre una terminal dentro del contenedor
 	$(COMPOSE) exec jupyter bash

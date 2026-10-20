@@ -6,8 +6,8 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
       args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
+        UID: ${HOST_UID:-1000}
+        GID: ${HOST_GID:-1000}
     image: pln-proyecto-final-jupyter
     container_name: pln-jupyter
     restart: unless-stopped
