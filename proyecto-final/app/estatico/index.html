@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Corrector explicado</title>
+<style>
+  :root {
+    --fondo: #f7f6f2; --superficie: #ffffff; --borde: #e3e0d8; --tinta: #1d1d1b; --tinta-2: #5f5d57;
+    --acento: #2a78d6; --acento-tinta: #ffffff;
+    --quita: #b42318; --quita-fondo: #fde8e6; --pone: #11734f; --pone-fondo: #ddf3e8;
+    --alta: #11734f; --alta-fondo: #ddf3e8; --media: #8a5a00; --media-fondo: #fbefd5; --baja: #5f5d57; --baja-fondo: #ecebe6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #161614; --superficie: #1f1f1c; --borde: #34332f; --tinta: #eeede8; --tinta-2: #a9a7a0;
+      --acento: #5b9ce8; --acento-tinta: #0b1220;
+      --quita: #ff8a80; --quita-fondo: #3d1d1a; --pone: #6fd3a5; --pone-fondo: #15362a;
+      --alta: #6fd3a5; --alta-fondo: #15362a; --media: #f0c060; --media-fondo: #3a2e12; --baja: #b9b7b0; --baja-fondo: #2c2b28;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta);
+         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .bajada { color: var(--tinta-2); margin: 0 0 24px; }
+  .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; }
+  textarea { width: 100%; min-height: 150px; resize: vertical; border: 1px solid var(--borde); border-radius: 8px;
+             padding: 12px; font: inherit; color: inherit; background: var(--fondo); }
+  textarea:focus-visible, button:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+  .acciones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  button { font: inherit; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--borde);
+           background: var(--superficie); color: var(--tinta); }
+  button.principal { background: var(--acento); color: var(--acento-tinta); border-color: var(--acento); font-weight: 600; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .contador { margin-left: auto; color: var(--tinta-2); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .resumen { margin: 28px 0 12px; color: var(--tinta-2); }
+  .oracion { margin-bottom: 12px; }
+  .texto { font-size: 1.08rem; line-height: 1.9; }
+  del { color: var(--quita); background: var(--quita-fondo); text-decoration-thickness: 2px; border-radius: 4px; padding: 0 2px; }
+  ins { color: var(--pone); background: var(--pone-fondo); text-decoration: none; font-weight: 600; border-radius: 4px; padding: 0 2px; }
+  sup.n { color: var(--tinta-2); font-size: .7rem; font-weight: 600; margin-left: 1px; }
+  ol.explicaciones { margin: 12px 0 0; padding-left: 0; list-style: none; border-top: 1px solid var(--borde); }
+  ol.explicaciones li { display: grid; grid-template-columns: 22px 1fr; gap: 4px 8px; padding: 10px 0; border-bottom: 1px solid var(--borde); }
+  ol.explicaciones li:last-child { border-bottom: 0; }
+  .num { color: var(--tinta-2); font-weight: 600; font-size: .85rem; padding-top: 2px; }
+  .cambio { font-weight: 600; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: .78rem; }
+  .chip { border-radius: 999px; padding: 1px 8px; font-weight: 600; }
+  .chip.alta { color: var(--alta); background: var(--alta-fondo); }
+  .chip.media { color: var(--media); background: var(--media-fondo); }
+  .chip.baja { color: var(--baja); background: var(--baja-fondo); }
+  code { color: var(--tinta-2); font-size: .78rem; }
+  .sin-cambios { color: var(--tinta-2); }
+  .sin-cambios .texto { font-size: 1rem; }
+  .corregido { margin-top: 20px; }
+  .corregido h2, .leyenda h2 { font-size: .95rem; margin: 0 0 8px; }
+  .corregido p { margin: 0 0 12px; }
+  .leyenda { margin-top: 20px; font-size: .88rem; color: var(--tinta-2); }
+  .leyenda ul { margin: 0; padding-left: 18px; }
+  .error { color: var(--quita); margin-top: 16px; }
+  footer { margin-top: 40px; color: var(--tinta-2); font-size: .8rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Corrector gramatical explicado</h1>
+  <p class="bajada">Escribe en inglés. Te devolvemos el texto corregido y, por cada cambio, la explicación en español.</p>
+
+  <section class="tarjeta">
+    <label for="texto" class="bajada" style="display:block;margin:0 0 8px">Tu texto en inglés</label>
+    <textarea id="texto" maxlength="2000" placeholder="Yesterday I go to the cinema with my friends…"></textarea>
+    <div class="acciones">
+      <button class="principal" id="corregir">Corregir</button>
+      <button data-ejemplo="0">Ejemplo: el cine</button>
+      <button data-ejemplo="1">Ejemplo: una carta</button>
+      <span class="contador" id="contador">0 / 2000</span>
+    </div>
+  </section>
+
+  <p class="error" id="error" role="alert" hidden></p>
+  <p class="resumen" id="resumen" aria-live="polite"></p>
+  <section id="resultado"></section>
+
+  <section class="tarjeta corregido" id="corregido" hidden>
+    <h2>Texto corregido</h2>
+    <p id="texto-corregido"></p>
+    <button id="copiar">Copiar</button>
+  </section>
+
+  <section class="leyenda" id="leyenda" hidden>
+    <h2>Cómo leer la confianza</h2>
+    <ul>
+      <li><span class="chip alta">Regla</span> errores que el modelo corrige bien (ortografía, concordancia, formas verbales, artículos).</li>
+      <li><span class="chip media">Probable</span> preposiciones, puntuación, tiempos verbales: revísalo.</li>
+      <li><span class="chip baja">Sugerencia</span> elección de palabra o redacción: puede haber otras opciones válidas.</li>
+    </ul>
+  </section>
+
+  <footer id="pie">BART-large afinado con FCE y W&amp;I+LOCNESS · explicaciones con ERRANT y spaCy · F0.5 = 0,527 en FCE test</footer>
+</main>
+
+<script>
+const EJEMPLOS = [
+  "Yesterday I go to the cinema with my friends. Is a very good film, I recommend you to see it. The people in my city is very friendly and they likes the football.",
+  "Dear Mrs Smith, As you know I am in charge for organise the conference in my college. Do not worry if Richard did not left you all the information. I am looking forward to hear from you.",
+];
+const CONFIANZA = { alta: "Regla", media: "Probable", baja: "Sugerencia" };
+const PUNTUACION = /^[.,;:!?)]+$/;
+const $ = (id) => document.getElementById(id);
+
+function escapar(s) {
+  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+// La oración original con cada edición marcada en su lugar: lo que se quita tachado y lo que se pone resaltado
+function marcar(original, ediciones) {
+  let html = "", cursor = 0;
+  ediciones.forEach((e, i) => {
+    const [desde, hasta] = e.caracteres_original;
+    let antes = original.slice(cursor, desde);
+    const insercion = desde === hasta;
+    // Una coma o un punto insertados van pegados a la palabra anterior, no después del espacio
+    if (insercion && PUNTUACION.test(e.corregido) && antes.endsWith(" ")) antes = antes.slice(0, -1);
+    html += escapar(antes);
+    if (e.original) html += `<del>${escapar(e.original)}</del>`;
+    if (e.original && e.corregido) html += " ";
+    if (e.corregido) html += `<ins>${escapar(e.corregido)}</ins>`;
+    html += `<sup class="n">${i + 1}</sup>`;
+    if (insercion && original.slice(desde, desde + 1) !== "" && !original.slice(desde).startsWith(" ")) html += " ";
+    cursor = hasta;
+  });
+  return html + escapar(original.slice(cursor));
+}
+
+function cambio(e) {
+  if (e.original && e.corregido) return `«${escapar(e.original)}» → «${escapar(e.corregido)}»`;
+  return e.corregido ? `falta «${escapar(e.corregido)}»` : `sobra «${escapar(e.original)}»`;
+}
+
+function mostrar(datos) {
+  const conCambios = datos.oraciones.filter((o) => o.ediciones.length);
+  const total = conCambios.reduce((n, o) => n + o.ediciones.length, 0);
+  $("resumen").textContent = total
+    ? `${total} ${total === 1 ? "corrección" : "correcciones"} en ${conCambios.length} de ${datos.oraciones.length} oraciones · ${datos.milisegundos} ms`
+    : `No encontramos errores en ${datos.oraciones.length} ${datos.oraciones.length === 1 ? "oración" : "oraciones"} · ${datos.milisegundos} ms`;
+  $("resultado").innerHTML = datos.oraciones.map((o) => {
+    if (!o.ediciones.length) {
+      return `<article class="tarjeta oracion sin-cambios"><div class="texto">${escapar(o.original)}</div></article>`;
+    }
+    const items = o.ediciones.map((e, i) => `
+      <li><span class="num">${i + 1}</span>
+        <div><span class="cambio">${cambio(e)}</span> ${escapar(e.explicacion)}
+          <div class="meta"><span class="chip ${e.confianza}">${CONFIANZA[e.confianza]}</span><code>${escapar(e.tipo)}</code></div>
+        </div></li>`).join("");
+    return `<article class="tarjeta oracion"><div class="texto">${marcar(o.original, o.ediciones)}</div>
+      <ol class="explicaciones">${items}</ol></article>`;
+  }).join("");
+  $("texto-corregido").textContent = datos.oraciones.map((o) => o.corregida).join(" ");
+  $("corregido").hidden = $("leyenda").hidden = !datos.oraciones.length;
+}
+
+async function corregir() {
+  const texto = $("texto").value.trim();
+  if (!texto) return;
+  $("corregir").disabled = true;
+  $("corregir").textContent = "Corrigiendo…";
+  $("error").hidden = true;
+  try {
+    const r = await fetch("api/corregir", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto }),
+    });
+    if (!r.ok) throw new Error(r.status === 422 ? "El texto debe tener entre 1 y 2000 caracteres." : `Error del servidor (${r.status}).`);
+    mostrar(await r.json());
+  } catch (err) {
+    $("error").textContent = err.message.startsWith("Error") || err.message.startsWith("El texto") ? err.message : "No se pudo contactar al servidor.";
+    $("error").hidden = false;
+  } finally {
+    $("corregir").disabled = false;
+    $("corregir").textContent = "Corregir";
+  }
+}
+
+const contar = () => { $("contador").textContent = `${$("texto").value.length} / 2000`; };
+$("texto").addEventListener("input", contar);
+$("texto").addEventListener("keydown", (ev) => { if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) corregir(); });
+$("corregir").addEventListener("click", corregir);
+document.querySelectorAll("[data-ejemplo]").forEach((b) => b.addEventListener("click", () => {
+  $("texto").value = EJEMPLOS[b.dataset.ejemplo]; contar(); corregir();
+}));
+$("copiar").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("texto-corregido").textContent); $("copiar").textContent = "Copiado"; }
+  catch { $("copiar").textContent = "Selecciónalo y cópialo"; }
+  setTimeout(() => { $("copiar").textContent = "Copiar"; }, 1500);
+});
+fetch("api/salud").then((r) => r.json()).then((s) => {
+  $("pie").textContent += ` · ${s.dispositivo === "cuda" ? "GPU" : s.dispositivo}`;
+}).catch(() => {});
+</script>
+</body>
+</html>

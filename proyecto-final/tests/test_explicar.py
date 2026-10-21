@@ -73,3 +73,14 @@ def test_indefinido_sobrante_y_mayuscula_inicial():
 def test_tiempo_verbal_contrae_el_articulo():
     e = unica("Yesterday I go to the cinema.", "Yesterday I went to the cinema.")
     assert e.tipo == "R:VERB:TENSE" and "(del presente sin -s al pasado)" in e.explicacion
+
+
+def test_posiciones_en_caracteres_para_subrayar():
+    original, corregida = "Is a good film, he go home.", "It is a good film. He goes home."
+    for e in explicar(original, corregida):
+        desde, hasta = e.caracteres_original
+        assert original[desde:hasta] == e.original
+        desde, hasta = e.caracteres_corregida
+        assert corregida[desde:hasta] == e.corregido
+    insercion = unica("I like music very much.", "I like the music very much.")
+    assert insercion.caracteres_original == (7, 7) and insercion.caracteres_corregida == (7, 10)

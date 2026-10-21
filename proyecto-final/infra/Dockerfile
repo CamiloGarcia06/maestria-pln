@@ -11,6 +11,8 @@ COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt \
  && python -m spacy download en_core_web_sm \
  && python -m spacy download en_core_web_lg
+COPY requirements-app.txt /tmp/requirements-app.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-app.txt
 
 RUN groupadd -g "$GID" pln && useradd -m -u "$UID" -g "$GID" pln
 USER pln

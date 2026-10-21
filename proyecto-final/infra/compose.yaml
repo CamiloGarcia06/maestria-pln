@@ -1,16 +1,32 @@
 name: pln-proyecto-final
 
+# Jupyter y la app comparten imagen, código montado en /work, caché de Hugging Face y GPU
+x-comun: &comun
+  build:
+    context: ..
+    dockerfile: infra/Dockerfile
+    args:
+      UID: ${HOST_UID:-1000}
+      GID: ${HOST_GID:-1000}
+  image: pln-proyecto-final-jupyter
+  restart: unless-stopped
+  volumes:
+    - ..:/work
+    # Caché de Hugging Face fuera del repo: tokenizadores y luego los modelos
+    - hf-cache:/home/pln/.cache/huggingface
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            # compute monta libcuda (PyTorch); utility monta nvidia-smi
+            capabilities: [gpu, compute, utility]
+
 services:
   jupyter:
-    build:
-      context: ..
-      dockerfile: infra/Dockerfile
-      args:
-        UID: ${HOST_UID:-1000}
-        GID: ${HOST_GID:-1000}
-    image: pln-proyecto-final-jupyter
+    <<: *comun
     container_name: pln-jupyter
-    restart: unless-stopped
     environment:
       JUPYTER_TOKEN: ${JUPYTER_TOKEN:?falta JUPYTER_TOKEN en infra/.env}
     # Los workers del DataLoader de PyTorch pasan los lotes por memoria compartida; Docker da 64 MB
@@ -18,18 +34,14 @@ services:
     # Solo en la IP de Tailscale: Jupyter ejecuta código, no debe quedar abierto en la LAN
     ports:
       - "${JUPYTER_BIND}:${JUPYTER_PORT:-8888}:8888"
-    volumes:
-      - ..:/work
-      # Caché de Hugging Face fuera del repo: tokenizadores y luego los modelos
-      - hf-cache:/home/pln/.cache/huggingface
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              # compute monta libcuda (PyTorch); utility monta nvidia-smi
-              capabilities: [gpu, compute, utility]
+
+  # App web del corrector (app/servidor.py) con BART-large; también solo en la IP de Tailscale
+  app:
+    <<: *comun
+    container_name: pln-app
+    command: ["uvicorn", "servidor:app", "--app-dir", "app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "${JUPYTER_BIND}:${APP_PORT:-8000}:8000"
 
 volumes:
   hf-cache:

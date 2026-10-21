@@ -32,6 +32,7 @@ flowchart LR
 proyecto-final/
 ├── Makefile                 comandos del entorno (make help)
 ├── requirements.txt         dependencias con versión fija
+├── requirements-app.txt     dependencias de la app web (FastAPI, uvicorn)
 ├── infra/                   Dockerfile, compose.yaml, servicio CDI de la GPU
 ├── scripts/descargar_datos.sh
 ├── src/
@@ -43,6 +44,9 @@ proyecto-final/
 │   ├── corregir.py          Corrector: genera la corrección con el modelo elegido (notebook 05 y app)
 │   ├── explicar.py          ERRANT + plantillas: cada edición con tipo, explicación en español y confianza
 │   └── graficas.py          estilo de las figuras
+├── app/
+│   ├── servidor.py          FastAPI: página + POST /api/corregir sobre explicar.corregir_y_explicar
+│   └── estatico/index.html  interfaz: cambios marcados en el texto y su explicación
 ├── tests/                   pytest (make test)
 ├── notebooks/
 │   ├── 01_analisis_datos.ipynb     calidad y descripción de los corpus
@@ -80,7 +84,7 @@ sudo systemctl enable --now nvidia-cdi-generate.service
 # 2. Configuración local: token de Jupyter, IP de Tailscale, UID/GID (crea infra/.env, no versionado)
 make env
 
-# 3. Construir y levantar Jupyter; imprime la URL para abrir desde otro equipo de la tailnet
+# 3. Construir y levantar Jupyter y la app web; imprime sus URL para abrir desde otro equipo de la tailnet
 make up
 
 # 4. Comprobar que PyTorch ve la GPU (debe terminar en «bf16 True · matmul ok True»)
@@ -106,7 +110,7 @@ make progreso SALIDA=modelos/experimentos/large-3e-5
 make evaluar
 ```
 
-Otros comandos: `make url`, `make logs`, `make status`, `make shell`, `make restart`, `make down`. El contenedor se reinicia solo con la máquina (`restart: unless-stopped`).
+Otros comandos: `make url`, `make logs`, `make app-logs`, `make status`, `make shell`, `make restart`, `make down`. Los contenedores se reinician solos con la máquina (`restart: unless-stopped`).
 
 ## Datos
 
@@ -216,6 +220,17 @@ El notebook `06_explicacion.ipynb` muestra la tarea complementaria. spaCy (`en_c
 - 28 plantillas propias y una genérica por operación (falta, sobra, cambia); cubren el 91,4 % de las 2.890 ediciones de BART-large en FCE test.
 - Cada edición lleva una confianza según el F0.5 de su tipo (notebook 05): alta 43 %, media 39 %, baja 18 % (se muestra como sugerencia).
 - `explicar.corregir_y_explicar(corrector, texto)` es el pipeline completo para la app: párrafo → oraciones → BART-large → ediciones con posición, tipo, explicación y confianza.
+
+## App web (`app/`)
+
+El servicio `app` de `infra/compose.yaml` comparte imagen y GPU con Jupyter y queda en `http://<IP de Tailscale>:8000/` (`make url`). Carga BART-large una sola vez al arrancar (≈ 15 s) y luego atiende cada consulta en ≈ 0,1–0,2 s por oración.
+
+1. El estudiante pega un texto en inglés (hasta 2.000 caracteres) y pulsa *Corregir* (o Ctrl+Enter).
+2. `POST /api/corregir` divide el párrafo en oraciones (spaCy), las corrige con BART-large y extrae las ediciones con ERRANT.
+3. La página tacha lo que sobra y subraya lo que falta en la oración original, numera cada cambio y lo explica en español con su confianza: *Regla* (alta), *Probable* (media) o *Sugerencia* (baja).
+4. Debajo queda el texto corregido completo, con un botón para copiarlo.
+
+`GET /api/salud` devuelve el modelo cargado y el dispositivo. Para usar otro checkpoint: variable `MODELO` en el servicio. Los tests (`tests/test_app.py`) usan un corrector falso, así que no necesitan GPU.
 
 ## Problemas conocidos
 

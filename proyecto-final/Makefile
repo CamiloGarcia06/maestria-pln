@@ -2,9 +2,10 @@
 COMPOSE := docker compose --env-file infra/.env -f infra/compose.yaml
 PORT    ?= 8888
 SALIDA  ?= modelos/bart-base-gec
+APP_PORT ?= 8000
 
 .DEFAULT_GOAL := help
-.PHONY: help env build up down restart logs status url shell gpu datos test analisis preparar entrenar entrenar-large progreso evaluar
+.PHONY: help env build up down restart logs status url shell gpu datos test analisis preparar entrenar entrenar-large progreso evaluar app-logs
 
 help: ## Muestra esta ayuda
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-15s %s\n", $$1, $$2}'
@@ -19,14 +20,14 @@ env: infra/.env ## Crea infra/.env con token, IP de Tailscale y UID
 build: infra/.env ## Construye la imagen
 	$(COMPOSE) build
 
-up: infra/.env ## Levanta Jupyter (se reinicia solo con la torre)
+up: infra/.env ## Levanta Jupyter y la app (se reinician solos con la torre)
 	$(COMPOSE) up -d --build
 	@$(MAKE) --no-print-directory url
 
-down: ## Detiene Jupyter
+down: ## Detiene Jupyter y la app
 	$(COMPOSE) down
 
-restart: ## Reinicia Jupyter
+restart: ## Reinicia Jupyter y la app
 	$(COMPOSE) restart
 
 logs: ## Sigue los logs
@@ -35,8 +36,12 @@ logs: ## Sigue los logs
 status: ## Estado del contenedor
 	$(COMPOSE) ps
 
-url: infra/.env ## Imprime la URL para abrir desde el navegador
-	@v() { sed -n "s/^$$1=//p" infra/.env; }; echo "http://$$(v JUPYTER_BIND):$$(v JUPYTER_PORT)/lab?token=$$(v JUPYTER_TOKEN)"
+url: infra/.env ## Imprime las URL de Jupyter y de la app para abrir desde el navegador
+	@v() { sed -n "s/^$$1=//p" infra/.env; }; echo "Jupyter: http://$$(v JUPYTER_BIND):$$(v JUPYTER_PORT)/lab?token=$$(v JUPYTER_TOKEN)"; \
+	  echo "App:     http://$$(v JUPYTER_BIND):$(APP_PORT)/"
+
+app-logs: ## Sigue los logs de la app
+	$(COMPOSE) logs -f app
 
 shell: ## Abre una terminal dentro del contenedor
 	$(COMPOSE) exec jupyter bash

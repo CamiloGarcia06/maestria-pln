@@ -37,6 +37,9 @@ class Edicion:
     fin: int
     explicacion: str
     confianza: str       # alta · media · baja (sugerencia)
+    # Posición en caracteres [desde, hasta) en cada oración, para subrayar en la app; vacía si es inserción
+    caracteres_original: tuple[int, int] = (0, 0)
+    caracteres_corregida: tuple[int, int] = (0, 0)
 
 
 @cache
@@ -214,6 +217,13 @@ GENERICAS = {
 }
 
 
+def _caracteres(doc, inicio: int, fin: int) -> tuple[int, int]:
+    if inicio < fin:
+        return doc[inicio].idx, doc[fin - 1].idx + len(doc[fin - 1].text)
+    posicion = doc[inicio].idx if inicio < len(doc) else len(doc.text)
+    return posicion, posicion
+
+
 def explicar(original: str, corregida: str) -> list[Edicion]:
     """Ediciones de ERRANT entre las dos oraciones, cada una con su explicación en español."""
     anotador = _anotador()
@@ -221,7 +231,8 @@ def explicar(original: str, corregida: str) -> list[Edicion]:
     ediciones = []
     for e in anotador.annotate(o, c):
         plantilla = PLANTILLAS.get(e.type) or GENERICAS[e.type[0]]
-        ediciones.append(Edicion(e.type, e.o_str, e.c_str, e.o_start, e.o_end, plantilla(e), confianza(e.type)))
+        ediciones.append(Edicion(e.type, e.o_str, e.c_str, e.o_start, e.o_end, plantilla(e), confianza(e.type),
+                                 _caracteres(o, e.o_start, e.o_end), _caracteres(c, e.c_start, e.c_end)))
     return ediciones
 
 

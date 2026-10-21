@@ -1,0 +1,4 @@
+# App web (app/servidor.py): capa aparte de la imagen para no reinstalar PyTorch al cambiarla
+fastapi==0.115.6
+uvicorn==0.34.0
+httpx==0.28.1
