@@ -1,12 +1,13 @@
 # Entorno del proyecto final en la torre: Jupyter en Docker, accesible por Tailscale.
 COMPOSE := docker compose --env-file infra/.env -f infra/compose.yaml
 PORT    ?= 8888
+SALIDA  ?= modelos/bart-base-gec
 
 .DEFAULT_GOAL := help
-.PHONY: help env build up down restart logs status url shell gpu datos test analisis preparar entrenar progreso
+.PHONY: help env build up down restart logs status url shell gpu datos test analisis preparar entrenar entrenar-large progreso evaluar
 
 help: ## Muestra esta ayuda
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-8s %s\n", $$1, $$2}'
+	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-15s %s\n", $$1, $$2}'
 
 infra/.env:
 	@printf 'JUPYTER_TOKEN=%s\nJUPYTER_BIND=%s\nJUPYTER_PORT=%s\nHOST_UID=%s\nHOST_GID=%s\n' \
@@ -59,13 +60,23 @@ analisis: ## Ejecuta los notebooks de análisis en orden (el 02 usa las tablas d
 preparar: ## Genera train.jsonl y los conjuntos de evaluación en datos/procesados/entrenamiento/
 	$(COMPOSE) exec jupyter python src/preparar.py
 
-entrenar: ## Afina BART-base en segundo plano (≈1 h); el log queda en modelos/entrenamiento.log
+entrenar: ## Afina BART-base en segundo plano (≈ 30 min); el log queda en modelos/entrenamiento.log
 	mkdir -p modelos
 	$(COMPOSE) exec -d jupyter bash -c "python src/entrenar.py > modelos/entrenamiento.log 2>&1"
 	@echo "Entrenando. Seguimiento: make progreso"
 
-progreso: ## Muestra la pérdida y el F0.5 por época del entrenamiento en curso
+entrenar-large: ## Afina BART-large (el modelo elegido, ≈ 1,5 h) en segundo plano; log en modelos/entrenamiento-large.log
+	mkdir -p modelos
+	$(COMPOSE) exec -d jupyter bash -c "python src/entrenar.py --modelo facebook/bart-large --lote 16 --acumulacion 2 \
+	  --salida modelos/experimentos/large-3e-5 > modelos/entrenamiento-large.log 2>&1"
+	@echo "Entrenando. Seguimiento: make progreso SALIDA=modelos/experimentos/large-3e-5"
+
+progreso: ## Pérdida y F0.5 por época del entrenamiento en SALIDA (por defecto modelos/bart-base-gec)
 	@$(COMPOSE) exec jupyter python -c "import json; \
 	  [print(f\"época {r['epoca']:>5} · F0.5 {r['eval_f05']:.4f} · P {r['eval_precision']:.3f} · R {r['eval_recall']:.3f}\") if 'eval_f05' in r \
-	   else print(f\"época {r['epoca']:>5} · pérdida {r['loss']:.3f}\") for r in map(json.loads, open('modelos/bart-base-gec/registro.jsonl')) \
+	   else print(f\"época {r['epoca']:>5} · pérdida {r['loss']:.3f}\") for r in map(json.loads, open('$(SALIDA)/registro.jsonl')) \
 	   if 'eval_f05' in r or r['paso'] % 500 == 0 and 'loss' in r]"
+
+evaluar: ## Ejecuta el notebook 05 (selección del modelo y evaluación final en test)
+	$(COMPOSE) exec jupyter jupyter nbconvert --to notebook --execute --inplace \
+	  --ExecutePreprocessor.timeout=1800 notebooks/05_evaluacion.ipynb

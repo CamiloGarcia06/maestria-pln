@@ -2,7 +2,7 @@
 
 Proyecto final del curso de Procesamiento de Lenguaje Natural. Un estudiante hispanohablante escribe un texto en inglés; el sistema le devuelve el texto corregido y, por cada corrección, una explicación en español del tipo de error («faltó el sujeto: en inglés el pronombre no se omite»). A diferencia de Grammarly, el foco no es solo corregir sino explicar, con atención a los errores que el análisis mostró más frecuentes en hispanohablantes.
 
-- **Tarea principal — Generación de lenguaje:** BART-base afinado reescribe la oración con errores en su versión corregida (la literatura lo plantea como traducción monolingüe *inglés con errores → inglés correcto*).
+- **Tarea principal — Generación de lenguaje:** BART-large afinado reescribe la oración con errores en su versión corregida (la literatura lo plantea como traducción monolingüe *inglés con errores → inglés correcto*).
 - **Tarea complementaria — POS tagging:** ERRANT 3.0.2, sobre las etiquetas de spaCy, alinea entrada y salida, extrae cada edición y la clasifica (`R:VERB:FORM`, `M:PRON`, …); ese tipo elige la plantilla de explicación.
 
 ## Pipeline
@@ -11,7 +11,7 @@ Proyecto final del curso de Procesamiento de Lenguaje Natural. Un estudiante his
 flowchart LR
     A[FCE v2.1 + W&I+LOCNESS v2.1<br/>archivos M2 + JSON] --> B[corpus.py<br/>pares original → corregida]
     B --> C[preparar.py<br/>sin UNK, sin duplicados,<br/>texto natural]
-    C --> D[BART-base afinado<br/>tokenizador BPE, máx. 128]
+    C --> D[BART-large afinado<br/>tokenizador BPE, máx. 128]
     D --> E[ERRANT + spaCy sm<br/>ediciones con tipo]
     E --> F[Plantillas en español<br/>25 tipos + genérica]
     F --> G[App web]
@@ -39,14 +39,16 @@ proyecto-final/
 │   ├── texto.py             destokenizador (tokens del M2 → texto natural)
 │   ├── preparar.py          conjuntos de entrenamiento y evaluación
 │   ├── evaluacion.py        F0.5 de ERRANT para la salida de BART
-│   ├── entrenar.py          afinado de BART-base y selección del checkpoint
+│   ├── entrenar.py          afinado de BART y selección del checkpoint
+│   ├── corregir.py          Corrector: genera la corrección con el modelo elegido (notebook 05 y app)
 │   └── graficas.py          estilo de las figuras
 ├── tests/                   pytest (make test)
 ├── notebooks/
 │   ├── 01_analisis_datos.ipynb     calidad y descripción de los corpus
 │   ├── 02_analisis_tareas.ipynb    análisis dirigido a las dos tareas
 │   ├── 03_preparacion.ipynb        preparación paso a paso con ejemplos reales
-│   └── 04_entrenamiento.ipynb      afinado de BART-base: lote, curvas y qué aprendió
+│   ├── 04_entrenamiento.ipynb      afinado de BART-base: lote, curvas y qué aprendió
+│   └── 05_evaluacion.ipynb         selección del modelo, F0.5 en test, por tipo y ejemplos
 ├── figuras/  resultados/    salidas de los notebooks (PNG y CSV)
 ├── presentacion/            entrega 1
 ├── datos/                   (no versionado) crudos/ y procesados/
@@ -58,7 +60,7 @@ proyecto-final/
 - Linux con GPU NVIDIA de 16 GB (probado en RTX 4060 Ti 16 GB, driver 615, CachyOS).
 - Docker 29 + Compose v2 y `nvidia-container-toolkit` 1.20.
 - Tailscale (Jupyter solo escucha en la IP de Tailscale) y `make`, `openssl`, `curl`.
-- Unos 20 GB de disco: imagen ~12,4 GB, corpus ~150 MB, cada checkpoint ~560 MB.
+- Unos 25 GB de disco: imagen ~12,4 GB, corpus ~150 MB, BART-base ~1,6 GB y BART-large ~4,6 GB por entrenamiento (con sus checkpoints).
 
 Dentro de la imagen (Python 3.12): PyTorch 2.14.1 (CUDA 13.0), transformers 5.20.2, accelerate 1.15.0, datasets 5.1.0, ERRANT 3.0.2, spaCy 3.8.16 con `en_core_web_sm` y `en_core_web_lg`, JupyterLab. Ver `requirements.txt`.
 
@@ -92,9 +94,14 @@ make analisis
 # 7. Conjuntos de entrenamiento y evaluación en datos/procesados/entrenamiento/
 make preparar
 
-# 8. Afinar BART-base en segundo plano (≈ 1 h) y seguir su avance
+# 8. Afinar BART-base (≈ 30 min) y BART-large (≈ 1,5 h) en segundo plano y seguir su avance
 make entrenar
 make progreso
+make entrenar-large
+make progreso SALIDA=modelos/experimentos/large-3e-5
+
+# 9. Evaluación final (notebook 05: selección, test, por tipo, ejemplos)
+make evaluar
 ```
 
 Otros comandos: `make url`, `make logs`, `make status`, `make shell`, `make restart`, `make down`. El contenedor se reinicia solo con la máquina (`restart: unless-stopped`).
@@ -168,6 +175,31 @@ Resultado del entrenamiento (30 minutos en la RTX 4060 Ti):
 | 5 | 0,535 | 0,356 | 0,486 |
 
 Después de la época 2 el modelo empieza a reescribir más: gana recall pero pierde precisión, y F0.5 baja. En `modelos/bart-base-gec/` quedan `mejor/` (el modelo elegido, listo para `from_pretrained`), `registro.jsonl` (pérdida y F0.5) y `predicciones/` (lo que generó en cada época).
+
+### Experimentos de mejora
+
+Con el mismo `src/entrenar.py` se probaron otras tasas con BART-base y `facebook/bart-large` (406 M parámetros, lote 16 × 2 de acumulación). Se eligió por F0.5 en `dev_seleccion`:
+
+| Corrida | Mejor época | Precisión | Recall | F0.5 en `dev_seleccion` |
+|---|---|---|---|---|
+| BART-base · 3e-5 (arriba) | 2 | 0,597 | 0,308 | 0,503 |
+| BART-base · 1e-5 | 7 | 0,587 | 0,324 | 0,505 |
+| BART-base · 5e-5 | 2 | 0,586 | 0,317 | 0,501 |
+| **BART-large · 3e-5 (elegido)** | **3** | **0,588** | **0,383** | **0,531** |
+
+La tasa no mueve a BART-base de 0,50; el tamaño sí, por recall. Corregir en varias pasadas (`Corrector.corregir(pasadas=3)`) tampoco ayuda: 0,5025 → 0,5017. BART-large debe cargarse en float32 (`cargar_modelo` lo fuerza): transformers 5 lo carga en el float16 en que está guardado y AdamW lo vuelve NaN al primer paso.
+
+## Evaluación (`make evaluar`)
+
+El notebook `05_evaluacion.ipynb` mide una sola vez el modelo elegido en los conjuntos que no se usaron para decidir nada:
+
+| Conjunto | Oraciones | Copiar | BART-base | **BART-large** | Techo |
+|---|---|---|---|---|---|
+| FCE test, todos | 2.695 | 0 | 0,495 | **0,525** | 0,855 |
+| FCE dev, hispanohablantes | 533 | 0 | 0,486 | **0,519** | 0,844 |
+| FCE test, hispanohablantes | 224 | 0 | 0,471 | **0,515** | 0,853 |
+
+En FCE test, BART-large tiene precisión 0,585 y recall 0,373. Por tipo de error es fuerte en ortografía (0,78), concordancia sujeto-verbo (0,76), forma verbal (0,71) y singular/plural (0,68), y débil en elección de palabra y reescrituras (≤ 0,32). Deja intactas 61 de las 67 oraciones correctas de los hispanohablantes de test y tarda ~120 ms por oración en la RTX 4060 Ti.
 
 ## Problemas conocidos
 
