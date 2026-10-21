@@ -13,7 +13,7 @@ flowchart LR
     B --> C[preparar.py<br/>sin UNK, sin duplicados,<br/>texto natural]
     C --> D[BART-large afinado<br/>tokenizador BPE, máx. 128]
     D --> E[ERRANT + spaCy sm<br/>ediciones con tipo]
-    E --> F[Plantillas en español<br/>25 tipos + genérica]
+    E --> F[Plantillas en español<br/>28 tipos + genérica]
     F --> G[App web]
     D -.-> H[Evaluación F0.5<br/>errant_compare]
 ```
@@ -41,6 +41,7 @@ proyecto-final/
 │   ├── evaluacion.py        F0.5 de ERRANT para la salida de BART
 │   ├── entrenar.py          afinado de BART y selección del checkpoint
 │   ├── corregir.py          Corrector: genera la corrección con el modelo elegido (notebook 05 y app)
+│   ├── explicar.py          ERRANT + plantillas: cada edición con tipo, explicación en español y confianza
 │   └── graficas.py          estilo de las figuras
 ├── tests/                   pytest (make test)
 ├── notebooks/
@@ -48,7 +49,8 @@ proyecto-final/
 │   ├── 02_analisis_tareas.ipynb    análisis dirigido a las dos tareas
 │   ├── 03_preparacion.ipynb        preparación paso a paso con ejemplos reales
 │   ├── 04_entrenamiento.ipynb      afinado de BART-base: lote, curvas y qué aprendió
-│   └── 05_evaluacion.ipynb         selección del modelo, F0.5 en test, por tipo y ejemplos
+│   ├── 05_evaluacion.ipynb         selección del modelo, F0.5 en test, por tipo y ejemplos
+│   └── 06_explicacion.ipynb        POS tagging, tipos de ERRANT y explicaciones; demo con texto propio
 ├── figuras/  resultados/    salidas de los notebooks (PNG y CSV)
 ├── presentacion/            entrega 1
 ├── datos/                   (no versionado) crudos/ y procesados/
@@ -100,7 +102,7 @@ make progreso
 make entrenar-large
 make progreso SALIDA=modelos/experimentos/large-3e-5
 
-# 9. Evaluación final (notebook 05: selección, test, por tipo, ejemplos)
+# 9. Evaluación final y explicaciones (notebooks 05 y 06)
 make evaluar
 ```
 
@@ -195,11 +197,25 @@ El notebook `05_evaluacion.ipynb` mide una sola vez el modelo elegido en los con
 
 | Conjunto | Oraciones | Copiar | BART-base | **BART-large** | Techo |
 |---|---|---|---|---|---|
-| FCE test, todos | 2.695 | 0 | 0,495 | **0,525** | 0,855 |
-| FCE dev, hispanohablantes | 533 | 0 | 0,486 | **0,519** | 0,844 |
-| FCE test, hispanohablantes | 224 | 0 | 0,471 | **0,515** | 0,853 |
+| FCE test, todos | 2.695 | 0 | 0,493 | **0,527** | 0,855 |
+| FCE dev, hispanohablantes | 533 | 0 | 0,483 | **0,520** | 0,844 |
+| FCE test, hispanohablantes | 224 | 0 | 0,465 | **0,515** | 0,853 |
 
-En FCE test, BART-large tiene precisión 0,585 y recall 0,373. Por tipo de error es fuerte en ortografía (0,78), concordancia sujeto-verbo (0,76), forma verbal (0,71) y singular/plural (0,68), y débil en elección de palabra y reescrituras (≤ 0,32). Deja intactas 61 de las 67 oraciones correctas de los hispanohablantes de test y tarda ~120 ms por oración en la RTX 4060 Ti.
+En FCE test, BART-large tiene precisión 0,587 y recall 0,373. Por tipo de error es fuerte en ortografía (0,78), concordancia sujeto-verbo (0,76), forma verbal (0,71) y singular/plural (0,68), y débil en elección de palabra y reescrituras (≤ 0,32). Deja intactas 61 de las 67 oraciones correctas de los hispanohablantes de test y tarda ~120 ms por oración en la RTX 4060 Ti.
+
+## Explicación (`src/explicar.py`)
+
+El notebook `06_explicacion.ipynb` muestra la tarea complementaria. spaCy (`en_core_web_sm`) etiqueta la oración original y la corregida (pos, tag y lema); ERRANT alinea las dos, extrae cada edición y la tipa con esas etiquetas; el tipo elige una plantilla en español y las etiquetas completan el detalle.
+
+| Edición (FCE test, hispanohablante) | Tipo | Explicación |
+|---|---|---|
+| *for → of* | `R:PREP` | La preposición correcta es «of», no «for». Las preposiciones no se traducen palabra por palabra del español… |
+| *organise → organising* | `R:VERB:FORM` | Aquí va la forma en -ing del verbo… Después de una preposición («of») el verbo va en -ing. |
+| *Is → It is* | `M:PRON` | Falta el sujeto «It». En inglés el sujeto no se omite aunque el verbo ya lo indique… |
+
+- 28 plantillas propias y una genérica por operación (falta, sobra, cambia); cubren el 91,4 % de las 2.890 ediciones de BART-large en FCE test.
+- Cada edición lleva una confianza según el F0.5 de su tipo (notebook 05): alta 43 %, media 39 %, baja 18 % (se muestra como sugerencia).
+- `explicar.corregir_y_explicar(corrector, texto)` es el pipeline completo para la app: párrafo → oraciones → BART-large → ediciones con posición, tipo, explicación y confianza.
 
 ## Problemas conocidos
 

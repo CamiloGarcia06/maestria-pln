@@ -77,6 +77,6 @@ progreso: ## Pérdida y F0.5 por época del entrenamiento en SALIDA (por defecto
 	   else print(f\"época {r['epoca']:>5} · pérdida {r['loss']:.3f}\") for r in map(json.loads, open('$(SALIDA)/registro.jsonl')) \
 	   if 'eval_f05' in r or r['paso'] % 500 == 0 and 'loss' in r]"
 
-evaluar: ## Ejecuta el notebook 05 (selección del modelo y evaluación final en test)
+evaluar: ## Ejecuta los notebooks 05 (evaluación final en test) y 06 (explicaciones)
 	$(COMPOSE) exec jupyter jupyter nbconvert --to notebook --execute --inplace \
-	  --ExecutePreprocessor.timeout=1800 notebooks/05_evaluacion.ipynb
+	  --ExecutePreprocessor.timeout=1800 notebooks/05_evaluacion.ipynb notebooks/06_explicacion.ipynb

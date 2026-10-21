@@ -20,7 +20,8 @@ RAIZ = Path(__file__).resolve().parents[1]
 
 
 class Corrector:
-    def __init__(self, ruta: str | Path, dispositivo: str | None = None, lote: int = 64):
+    def __init__(self, ruta: str | Path, dispositivo: str | None = None, lote: int = 32):
+        # Con 64 oraciones largas, BART-large y 4 haces llegan al límite de los 16 GB
         self.dispositivo = dispositivo or ("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizador = AutoTokenizer.from_pretrained(ruta)
         self.modelo = AutoModelForSeq2SeqLM.from_pretrained(ruta).to(self.dispositivo).eval()
