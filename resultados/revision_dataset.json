@@ -1,0 +1,82 @@
+{
+  "notas": 2189,
+  "con_error": 1219,
+  "exactitud_clase_mayoritaria": 0.557,
+  "oraciones_por_nota": {
+    "mean": 12.6,
+    "50%": 11.0,
+    "max": 48.0
+  },
+  "oraciones_total": 27673,
+  "error_en_ultima_oracion": 0.623,
+  "error_en_primera_mitad": 0.094,
+  "casos": 1240,
+  "casos_par_correcta_y_error": 934,
+  "notas_en_un_par": 0.863,
+  "notas_con_fragmentos_de_3_palabras_o_menos": 1289,
+  "notas_con_lineas_sin_id": 350,
+  "palabras_cambiadas_por_correccion": {
+    "mean": 3.5,
+    "50%": 3.0,
+    "max": 24.0
+  },
+  "tokens": {
+    "detector": {
+      "modelo": "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext",
+      "vocabulario": 30522,
+      "tokens_por_nota": {
+        "mean": 173.0,
+        "50%": 167.0,
+        "max": 414.0
+      },
+      "tokens_par_oracion_nota_max": 425,
+      "ejemplo": [
+        "haem",
+        "##ophilus",
+        "influenzae",
+        "met",
+        "##oprol",
+        "##ol"
+      ]
+    },
+    "corrector": {
+      "modelo": "GanjinZero/biobart-v2-large",
+      "vocabulario": 85401,
+      "tokens_por_nota": {
+        "mean": 189.0,
+        "50%": 180.0,
+        "max": 482.0
+      },
+      "tokens_par_oracion_nota_max": 497,
+      "ejemplo": [
+        "ĠHaemophilus",
+        "Ġinfluenzae",
+        "Ġmetoprolol"
+      ]
+    },
+    "flan_t5_referencia": {
+      "modelo": "google/flan-t5-base",
+      "vocabulario": 32100,
+      "tokens_por_nota": {
+        "mean": 204.0,
+        "50%": 194.0,
+        "max": 516.0
+      },
+      "tokens_par_oracion_nota_max": 521,
+      "ejemplo": [
+        "▁Ha",
+        "e",
+        "m",
+        "ophil",
+        "us",
+        "▁influenza",
+        "e",
+        "▁me",
+        "top",
+        "rol",
+        "o",
+        "l"
+      ]
+    }
+  }
+}

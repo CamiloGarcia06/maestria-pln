@@ -7,3 +7,6 @@ modelos/
 __pycache__/
 .ipynb_checkpoints/
 *.log
+
+# Dataset MEDIQA-CORR (se baja de https://github.com/abachaa/MEDEC)
+datos/*.csv
