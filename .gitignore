@@ -1,0 +1,9 @@
+# Entorno virtual
+.venv/
+
+# Modelos entrenados (se regeneran al ejecutar los notebooks)
+modelos/
+
+__pycache__/
+.ipynb_checkpoints/
+*.log
