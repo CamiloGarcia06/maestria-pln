@@ -8,17 +8,33 @@
     "max": 48.0
   },
   "oraciones_total": 27673,
+  "negativas_por_positiva_a_nivel_de_oracion": 21.7,
   "error_en_ultima_oracion": 0.623,
   "error_en_primera_mitad": 0.094,
-  "casos": 1240,
-  "casos_par_correcta_y_error": 934,
-  "notas_en_un_par": 0.863,
+  "error_en_oracion_0": 15,
+  "casos": 1219,
+  "casos_par_correcta_y_error": 967,
+  "casos_solo_version_con_error": 250,
+  "casos_de_mas_de_2_notas": 1,
+  "notas_en_un_par": 0.885,
+  "clave_primera_oracion": {
+    "casos": 1240,
+    "grupos_de_mas_de_2_notas": 6,
+    "pares_separados": 28
+  },
   "notas_con_fragmentos_de_3_palabras_o_menos": 1289,
-  "notas_con_lineas_sin_id": 350,
+  "notas_con_lineas_sin_id": 336,
+  "lineas_sin_id_con_texto": 1131,
   "palabras_cambiadas_por_correccion": {
     "mean": 3.5,
     "50%": 3.0,
     "max": 24.0
+  },
+  "rougeL_original_vs_referencia": {
+    "mediana": 0.667,
+    "p10": 0.2,
+    "rechazadas_con_0.7": 700,
+    "fraccion_rechazada_con_0.7": 0.574
   },
   "tokens": {
     "detector": {

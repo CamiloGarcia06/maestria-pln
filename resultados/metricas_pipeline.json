@@ -1,0 +1,473 @@
+{
+  "modo_rapido": false,
+  "particion": {
+    "notas_train": 1737,
+    "notas_val": 448,
+    "notas_prueba": 574,
+    "notas_sacadas_por_fuga": 4
+  },
+  "limpieza": {
+    "entrenamiento": {
+      "oraciones_oficiales": 27673,
+      "segmentos": 24276,
+      "fragmentos_unidos": 3397,
+      "lineas_sin_id_pegadas": 1131,
+      "techo_B_tras_mapear_ids": 0.9984
+    },
+    "prueba": {
+      "oraciones_oficiales": 7162,
+      "segmentos": 6286,
+      "fragmentos_unidos": 876,
+      "lineas_sin_id_pegadas": 252,
+      "techo_B_tras_mapear_ids": 0.9969
+    }
+  },
+  "peso_clase": 18.82939362795478,
+  "detector": {
+    "historial": [
+      {
+        "época": 1,
+        "pérdida train": 0.8185723491042395,
+        "F1 de A (val)": 0.7074235807860263,
+        "AUC por nota (val)": 0.5266493892639023,
+        "minutos": 4.186227325598399
+      },
+      {
+        "época": 2,
+        "pérdida train": 0.44764218200770384,
+        "F1 de A (val)": 0.6933333333333334,
+        "AUC por nota (val)": 0.5130785920925747,
+        "minutos": 4.177945133050283
+      },
+      {
+        "época": 3,
+        "pérdida train": 0.3192265286291046,
+        "F1 de A (val)": 0.6938775510204082,
+        "AUC por nota (val)": 0.5212552234008357,
+        "minutos": 4.179592768351237
+      }
+    ],
+    "umbral_bandera": 0.92
+  },
+  "corrector": {
+    "historial": [
+      {
+        "epoch": 1.0,
+        "pérdida train": 2.008,
+        "pérdida val": 1.1005750894546509,
+        "ROUGE-1 val": 0.24534320042138663
+      },
+      {
+        "epoch": 2.0,
+        "pérdida train": 0.8946,
+        "pérdida val": 1.0593935251235962,
+        "ROUGE-1 val": 0.5739344556359793
+      },
+      {
+        "epoch": 3.0,
+        "pérdida train": 0.5934,
+        "pérdida val": 1.1230685710906982,
+        "ROUGE-1 val": 0.5757011594483236
+      },
+      {
+        "epoch": 4.0,
+        "pérdida train": 0.442,
+        "pérdida val": 1.1461459398269653,
+        "ROUGE-1 val": 0.5811770449903064
+      },
+      {
+        "epoch": 5.0,
+        "pérdida train": 0.3481,
+        "pérdida val": 1.1718641519546509,
+        "ROUGE-1 val": 0.5865675031074947
+      }
+    ],
+    "umbral_calidad": 0.3,
+    "calibracion": [
+      {
+        "umbral": 0.0,
+        "C compuesto": 0.601,
+        "cambia el 1.er haz": 0.0,
+        "marcadas para revisión": 0.217
+      },
+      {
+        "umbral": 0.1,
+        "C compuesto": 0.602,
+        "cambia el 1.er haz": 0.016,
+        "marcadas para revisión": 0.217
+      },
+      {
+        "umbral": 0.2,
+        "C compuesto": 0.602,
+        "cambia el 1.er haz": 0.012,
+        "marcadas para revisión": 0.217
+      },
+      {
+        "umbral": 0.3,
+        "C compuesto": 0.603,
+        "cambia el 1.er haz": 0.02,
+        "marcadas para revisión": 0.217
+      },
+      {
+        "umbral": 0.4,
+        "C compuesto": 0.601,
+        "cambia el 1.er haz": 0.02,
+        "marcadas para revisión": 0.217
+      },
+      {
+        "umbral": 0.5,
+        "C compuesto": 0.601,
+        "cambia el 1.er haz": 0.045,
+        "marcadas para revisión": 0.225
+      },
+      {
+        "umbral": 0.6,
+        "C compuesto": 0.6,
+        "cambia el 1.er haz": 0.074,
+        "marcadas para revisión": 0.225
+      },
+      {
+        "umbral": 0.667,
+        "C compuesto": 0.599,
+        "cambia el 1.er haz": 0.094,
+        "marcadas para revisión": 0.23
+      },
+      {
+        "umbral": 0.7,
+        "C compuesto": 0.599,
+        "cambia el 1.er haz": 0.094,
+        "marcadas para revisión": 0.23
+      },
+      {
+        "umbral": 0.8,
+        "C compuesto": 0.601,
+        "cambia el 1.er haz": 0.086,
+        "marcadas para revisión": 0.254
+      },
+      {
+        "umbral": 0.9,
+        "C compuesto": 0.6,
+        "cambia el 1.er haz": 0.066,
+        "marcadas para revisión": 0.258
+      }
+    ]
+  },
+  "bases": {
+    "entrenamiento": {
+      "A · siempre «hay error»": 0.556979405034325,
+      "B · última oración (notas con error)": 0.6228430566967954
+    },
+    "validación": {
+      "A · siempre «hay error»": 0.5446428571428571,
+      "B · última oración (notas con error)": 0.6024590163934426
+    },
+    "prueba": {
+      "A · siempre «hay error»": 0.5557491289198606,
+      "B · última oración (notas con error)": 0.6175548589341693
+    }
+  },
+  "validacion_a_y_b": {
+    "A · exactitud": 0.5513392857142857,
+    "A · precisión": 0.5485327313769752,
+    "A · recall": 0.9959016393442623,
+    "A · F1": 0.7074235807860263,
+    "B · exactitud (todas las notas)": 0.5357142857142857,
+    "B · exactitud (notas con error)": 0.9672131147540983,
+    "B · localización si se sabe que hay error": 0.9672131147540983
+  },
+  "validacion_diagnostico_pares": {
+    "AUC de la probabilidad por nota (validación)": 0.5266493892639023,
+    "pares correcta + error en validación": 204,
+    "en la versión correcta, la oración más sospechosa es la que lleva el error en la otra versión": 0.04411764705882353,
+    "probabilidad media de la nota, versión con error": 0.9744331235312583,
+    "probabilidad media de la nota, versión correcta": 0.9703727432837089,
+    "la versión con error recibe más probabilidad que su versión correcta": 0.4362745098039216
+  },
+  "validacion_umbral_mayor_exactitud": {
+    "umbral": 0.92,
+    "exactitud": 0.5513392857142857,
+    "precision": 0.5485327313769752,
+    "recall": 0.9959016393442623,
+    "f1": 0.7074235807860263
+  },
+  "prueba": {
+    "A · exactitud": 0.554006968641115,
+    "A · precisión": 0.5551663747810858,
+    "A · recall": 0.9937304075235109,
+    "A · F1": 0.7123595505617978,
+    "B · exactitud (todas las notas)": 0.5296167247386759,
+    "B · exactitud (notas con error)": 0.9498432601880877,
+    "B · localización si se sabe que hay error": 0.9561128526645768,
+    "C · rouge1": 0.32098170053811587,
+    "C · bertscore": 0.3593254304208666,
+    "C · bleurt": 0.3064181910315042,
+    "C · agregado": 0.32890844066349556,
+    "marcadas para revisión": 0.17421602787456447
+  },
+  "prueba_matriz_A": {
+    "verdaderos_positivos": 317,
+    "falsos_positivos": 254,
+    "falsos_negativos": 2,
+    "verdaderos_negativos": 1
+  },
+  "prueba_C_con_oracion_real": {
+    "rouge1": 0.5957040232538329,
+    "bertscore": 0.6616903734349625,
+    "bleurt": 0.5600833244925383,
+    "agregado": 0.6058259070604445
+  },
+  "prueba_medqa": {
+    "A · exactitud": 0.554006968641115,
+    "A · precisión": 0.5551663747810858,
+    "A · recall": 0.9937304075235109,
+    "A · F1": 0.7123595505617978,
+    "B · exactitud (todas las notas)": 0.5296167247386759,
+    "B · exactitud (notas con error)": 0.9498432601880877,
+    "B · localización si se sabe que hay error": 0.9561128526645768,
+    "C · rouge1": 0.39281253249221115,
+    "C · bertscore": 0.42086061578282913,
+    "C · bleurt": 0.39189137448313344,
+    "C · agregado": 0.4018548409193912,
+    "marcadas para revisión": 0.1480836236933798
+  },
+  "prueba_medqa_C_con_oracion_real": {
+    "rouge1": 0.7285633116321315,
+    "bertscore": 0.7748498840485247,
+    "bleurt": 0.7191044820420047,
+    "agregado": 0.7408392259075537
+  },
+  "experimentos_detector": [
+    {
+      "detector": "plan",
+      "bandera": "bandera del detector",
+      "A · exactitud": 0.5513392857142857,
+      "A · precisión": 0.5485327313769752,
+      "A · recall": 0.9959016393442623,
+      "A · F1": 0.7074235807860263,
+      "B · exactitud (todas las notas)": 0.5357142857142857,
+      "B · exactitud (notas con error)": 0.9672131147540983,
+      "B · localización si se sabe que hay error": 0.9672131147540983,
+      "AUC por nota": 0.5266493892639023,
+      "épocas": 3,
+      "minutos": 0.20487423340479533
+    },
+    {
+      "detector": "plan",
+      "bandera": "bandera combinada con MedQA",
+      "A · exactitud": 0.9508928571428571,
+      "A · precisión": 0.9404761904761905,
+      "A · recall": 0.9713114754098361,
+      "A · F1": 0.9556451612903225,
+      "B · exactitud (todas las notas)": 0.9375,
+      "B · exactitud (notas con error)": 0.9467213114754098,
+      "B · localización si se sabe que hay error": 0.9672131147540983,
+      "AUC por nota": 0.9866200578592094,
+      "épocas": 3,
+      "minutos": 0.20487431287765503
+    },
+    {
+      "detector": "sin peso de clase",
+      "bandera": "bandera del detector",
+      "A · exactitud": 0.546875,
+      "A · precisión": 0.5480093676814989,
+      "A · recall": 0.9590163934426229,
+      "A · F1": 0.6974664679582713,
+      "B · exactitud (todas las notas)": 0.5424107142857143,
+      "B · exactitud (notas con error)": 0.9508196721311475,
+      "B · localización si se sabe que hay error": 0.9754098360655737,
+      "AUC por nota": 0.49691618450658953,
+      "épocas": 3,
+      "minutos": 12.784789256254832
+    },
+    {
+      "detector": "sin peso de clase",
+      "bandera": "bandera combinada con MedQA",
+      "A · exactitud": 0.9508928571428571,
+      "A · precisión": 0.937007874015748,
+      "A · recall": 0.9754098360655737,
+      "A · F1": 0.9558232931726907,
+      "B · exactitud (todas las notas)": 0.9375,
+      "B · exactitud (notas con error)": 0.9508196721311475,
+      "B · localización si se sabe que hay error": 0.9754098360655737,
+      "AUC por nota": 0.9876647380263581,
+      "épocas": 3,
+      "minutos": 12.784789311885834
+    },
+    {
+      "detector": "pista MedQA",
+      "bandera": "bandera del detector",
+      "A · exactitud": 0.9665178571428571,
+      "A · precisión": 0.9490196078431372,
+      "A · recall": 0.9918032786885246,
+      "A · F1": 0.969939879759519,
+      "B · exactitud (todas las notas)": 0.9598214285714286,
+      "B · exactitud (notas con error)": 0.9795081967213115,
+      "B · localización si se sabe que hay error": 0.9795081967213115,
+      "AUC por nota": 0.9856456927033108,
+      "épocas": 4,
+      "minutos": 17.46879291931788
+    },
+    {
+      "detector": "pista MedQA",
+      "bandera": "bandera combinada con MedQA",
+      "A · exactitud": 0.9665178571428571,
+      "A · precisión": 0.9490196078431372,
+      "A · recall": 0.9918032786885246,
+      "A · F1": 0.969939879759519,
+      "B · exactitud (todas las notas)": 0.9598214285714286,
+      "B · exactitud (notas con error)": 0.9795081967213115,
+      "B · localización si se sabe que hay error": 0.9795081967213115,
+      "AUC por nota": 0.9919238187078111,
+      "épocas": 4,
+      "minutos": 17.468792994817097
+    },
+    {
+      "detector": "pista MedQA + BiomedBERT-large",
+      "bandera": "bandera del detector",
+      "A · exactitud": 0.9732142857142857,
+      "A · precisión": 0.9566929133858267,
+      "A · recall": 0.9959016393442623,
+      "A · F1": 0.9759036144578312,
+      "B · exactitud (todas las notas)": 0.9620535714285714,
+      "B · exactitud (notas con error)": 0.9754098360655737,
+      "B · localización si se sabe que hay error": 0.9754098360655737,
+      "AUC por nota": 0.9824011571841851,
+      "épocas": 4,
+      "minutos": 50.63845470348994
+    },
+    {
+      "detector": "pista MedQA + BiomedBERT-large",
+      "bandera": "bandera combinada con MedQA",
+      "A · exactitud": 0.9732142857142857,
+      "A · precisión": 0.9566929133858267,
+      "A · recall": 0.9959016393442623,
+      "A · F1": 0.9759036144578312,
+      "B · exactitud (todas las notas)": 0.9620535714285714,
+      "B · exactitud (notas con error)": 0.9754098360655737,
+      "B · localización si se sabe que hay error": 0.9754098360655737,
+      "AUC por nota": 0.9939529090324655,
+      "épocas": 4,
+      "minutos": 50.63845475912094
+    }
+  ],
+  "experimentos_corrector": [
+    {
+      "corrector": "plan",
+      "control de calidad": "sin control",
+      "C": 0.600732655078653,
+      "umbral": 0.0,
+      "ROUGE-1 val (mejor época)": 0.5865675031074947,
+      "minutos": 0.5559044520060221
+    },
+    {
+      "corrector": "plan",
+      "control de calidad": "con control",
+      "C": 0.6030426701262319,
+      "umbral": 0.3,
+      "ROUGE-1 val (mejor época)": 0.5865675031074947,
+      "minutos": 0.555905278523763
+    },
+    {
+      "corrector": "plan",
+      "control de calidad": "+ reordenar MedQA, con control",
+      "C": 0.7294673910064691,
+      "umbral": 0.1,
+      "ROUGE-1 val (mejor época)": 0.5865675031074947,
+      "minutos": 0.5559057195981344
+    },
+    {
+      "corrector": "pista: opciones",
+      "control de calidad": "sin control",
+      "C": 0.6718142306955251,
+      "umbral": 0.0,
+      "ROUGE-1 val (mejor época)": 0.6554509006485348,
+      "minutos": 5.937636907895406
+    },
+    {
+      "corrector": "pista: opciones",
+      "control de calidad": "con control",
+      "C": 0.6847170072293777,
+      "umbral": 0.5,
+      "ROUGE-1 val (mejor época)": 0.6554509006485348,
+      "minutos": 5.937637567520142
+    },
+    {
+      "corrector": "pista: opciones",
+      "control de calidad": "+ reordenar MedQA, con control",
+      "C": 0.751925243226128,
+      "umbral": 0.5,
+      "ROUGE-1 val (mejor época)": 0.6554509006485348,
+      "minutos": 5.937637988726298
+    },
+    {
+      "corrector": "pista: respuesta",
+      "control de calidad": "sin control",
+      "C": 0.8504714010362739,
+      "umbral": 0.0,
+      "ROUGE-1 val (mejor época)": 0.846331906661337,
+      "minutos": 5.583352887630463
+    },
+    {
+      "corrector": "pista: respuesta",
+      "control de calidad": "con control",
+      "C": 0.8504714010362739,
+      "umbral": 0.0,
+      "ROUGE-1 val (mejor época)": 0.846331906661337,
+      "minutos": 5.58335356314977
+    },
+    {
+      "corrector": "pista: respuesta",
+      "control de calidad": "+ reordenar MedQA, con control",
+      "C": 0.8471523878632546,
+      "umbral": 0.2,
+      "ROUGE-1 val (mejor época)": 0.846331906661337,
+      "minutos": 5.583353952566783
+    }
+  ],
+  "configuracion_final": {
+    "detector": {
+      "pista_medqa": true,
+      "modelo": "microsoft/BiomedNLP-BiomedBERT-large-uncased-abstract",
+      "lote": 8,
+      "acumulacion": 2,
+      "tasa": 1e-05
+    },
+    "corrector": {
+      "pista_medqa": "respuesta",
+      "reordenar_medqa": false
+    },
+    "decision": {
+      "combinar_medqa": false
+    }
+  },
+  "final": {
+    "umbral_bandera": 0.02,
+    "umbral_calidad": 0.0,
+    "prueba": {
+      "A · exactitud": 0.980836236933798,
+      "A · precisión": 0.9723926380368099,
+      "A · recall": 0.9937304075235109,
+      "A · F1": 0.9829457364341084,
+      "B · exactitud (todas las notas)": 0.975609756097561,
+      "B · exactitud (notas con error)": 0.9843260188087775,
+      "B · localización si se sabe que hay error": 0.9905956112852664,
+      "C · rouge1": 0.898586328529187,
+      "C · bertscore": 0.9204126209124456,
+      "C · bleurt": 0.9056549501647517,
+      "C · agregado": 0.9082179665354615,
+      "marcadas para revisión": 0.006968641114982578
+    },
+    "prueba_matriz_A": {
+      "verdaderos_positivos": 317,
+      "falsos_positivos": 9,
+      "falsos_negativos": 2,
+      "verdaderos_negativos": 246
+    },
+    "prueba_C_con_oracion_real": {
+      "rouge1": 0.849324283035373,
+      "bertscore": 0.8877570609500789,
+      "bleurt": 0.8619999843518188,
+      "agregado": 0.8663604427790902
+    }
+  }
+}

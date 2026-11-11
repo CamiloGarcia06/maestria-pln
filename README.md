@@ -1,6 +1,6 @@
 # Taller 7: Pipeline para detectar y corregir errores médicos en notas clínicas (MEDIQA-CORR 2024)
 
-**Procesamiento de Lenguaje Natural · Maestría · Grupo 6 · Camilo García**
+**Procesamiento de Lenguaje Natural · Maestría · Grupo 6 · David Lasso, Nestor Fadiño y Camilo García**
 
 **Código:** <https://github.com/CamiloGarcia06/maestria-pln/tree/taller-7>. La revisión del dataset está en
 [`scripts/revisar_dataset.py`](scripts/revisar_dataset.py) y sus cifras en
@@ -74,10 +74,10 @@ error. Cada hallazgo termina en una decisión de diseño:
 | Hallazgo | Cifra | Decisión en el pipeline |
 |---|---|---|
 | Clases casi balanceadas | 1.219 con error (55,7 %), 970 sin error | Siempre decir «hay error» da **55,7 %** en A: es la base que hay que superar |
-| Una nota tiene muchas oraciones y solo una mala | 12,6 oraciones por nota en promedio (máx. 48), 27.673 en total | El detector clasifica **cada oración**: 1.219 positivas contra 26.454 negativas (1 de cada 23). Se entrena con peso de clase ≈ 21,7 |
-| **Las notas vienen en pares** | 1.240 casos; 934 tienen una versión correcta y otra con error (86 % de las notas está en un par) | Separar entrenamiento y validación **por caso** (`GroupKFold`). Si una versión queda en entrenamiento y la otra en validación, el modelo ya vio el caso y la validación miente |
+| Una nota tiene muchas oraciones y solo una mala | 12,6 oraciones por nota en promedio (máx. 48), 27.673 en total | El detector clasifica **cada oración**: 1.219 positivas contra 26.454 negativas, **21,7 negativas por positiva a nivel de oración** (a nivel de nota es 1.219 contra 970). Se entrena con peso de clase ≈ 21,7 |
+| **Las notas vienen en pares** | 1.219 casos; 967 tienen una versión correcta y otra con error (88 % de las notas está en un par), 250 solo la versión con error, 1 solo la correcta y 1 grupo junta 4 notas de dos casos casi iguales (967·2 + 250 + 1 + 4 = 2.189) | Separar entrenamiento y validación **por caso** (`GroupKFold`). Si una versión queda en entrenamiento y la otra en validación, el modelo ya vio el caso y la validación miente. El caso **no** se identifica por la primera oración: esa clave junta en 6 grupos de 3–4 notas casos distintos que abren igual («... routine health maintenance examination.») y separa 28 pares reales, 15 de ellos porque el error está en la oración 0 |
 | **El error suele ir al final** | 62,3 % de los errores está en la última oración; solo 9,4 % en la primera mitad | «Elegir siempre la última oración» es la base de B. **No** damos la posición como rasgo al modelo: es un efecto de cómo se armó MS y no se cumple en notas reales (UW) |
-| La segmentación corta oraciones | 1.289 notas tienen «oraciones» de 3 palabras o menos (`"100/68 mm"`, `"Hg."`); 350 traen líneas sin id | Unir los fragmentos para el modelo, pero **guardar el mapa a los ids oficiales**: la subtarea B se califica con el id original |
+| La segmentación corta oraciones | 1.289 notas tienen «oraciones» de 3 palabras o menos (`"100/68 mm"`, `"Hg."`); 336 traen 1.131 líneas sin id, casi todas valores de laboratorio (`"Platelet count 100,000"`) | **No descartar nada**: las líneas sin id se pegan a la oración anterior, porque traen evidencia clínica. Unir los fragmentos para el modelo, pero **guardar el mapa a los ids oficiales**: la subtarea B se califica con el id original |
 | La corrección es un cambio corto | 3,5 palabras cambiadas en promedio (mediana 3, máx. 24) | El corrector **reescribe una oración**, no la nota. El control de calidad rechaza salidas que se alejen mucho de la original |
 | Vocabulario médico | ver tabla siguiente | Elegir modelos **biomédicos** de Hugging Face |
 
@@ -115,14 +115,14 @@ Usamos **dos modelos de Hugging Face**, uno por habilidad, como sugiere MEDEC:
 ```mermaid
 flowchart TD
     A["1 · Carga y limpieza<br/>cargar_corpus · parsear_oraciones<br/>unir_fragmentos · mapear_ids_oficiales"]
-    B["2 · Partición por caso<br/>identificar_caso · dividir_por_caso"]
+    B["2 · Partición por caso<br/>identificar_casos · dividir_por_caso"]
     C["3 · Ejemplos por oración<br/>armar_pares_oracion_nota · calcular_peso_clase"]
     D["4 · Detector BiomedBERT<br/>tokenizar_pares · entrenar_detector<br/>puntuar_oraciones"]
     E["5 · Decisión A y B<br/>ajustar_umbral · decidir_bandera<br/>elegir_oracion"]
     F{"¿bandera = 1?"}
     G["6 · Corrector BioBART<br/>marcar_oracion · armar_ejemplos_correccion<br/>entrenar_corrector · generar_correccion"]
-    H["7 · Control de calidad<br/>controlar_correccion"]
-    I["8 · Salida y evaluación<br/>formatear_salida · exactitud_bandera<br/>exactitud_oracion · puntajes_correccion<br/>puntaje_compuesto"]
+    H["7 · Control de calidad<br/>controlar_correccion · calibrar_umbral_calidad"]
+    I["8 · Salida y evaluación<br/>formatear_salida · exactitud_bandera<br/>metricas_bandera · exactitud_oracion · puntajes_correccion<br/>puntaje_compuesto"]
     X["Extensión · MedQA<br/>indexar_medqa · recuperar_pregunta<br/>candidatos_correccion"]
 
     A --> B --> C --> D --> E --> F
@@ -136,7 +136,7 @@ flowchart TD
 | Función | Qué hace |
 |---|---|
 | `cargar_corpus(ruta) -> DataFrame` | Lee el CSV y normaliza tipos (`Error Sentence ID` a entero, `NA` a `None`) |
-| `parsear_oraciones(columna) -> dict[int, str]` | Convierte `"0 texto\n1 texto"` en `{0: "texto", 1: "texto"}` y descarta las líneas sin id |
+| `parsear_oraciones(columna) -> dict[int, str]` | Convierte `"0 texto\n1 texto"` en `{0: "texto", 1: "texto"}`. Las líneas sin id (valores de laboratorio) se pegan a la oración anterior, no se descartan |
 | `unir_fragmentos(oraciones) -> list[Segmento]` | Pega a la oración anterior los fragmentos que no son oración (`"mm"`, `"Hg."`, `"100/68 mm"`) para que el modelo lea frases completas |
 | `mapear_ids_oficiales(segmentos) -> dict[int, list[int]]` | Guarda qué ids oficiales cubre cada segmento unido, para devolver el id que exige la subtarea B |
 
@@ -144,7 +144,7 @@ flowchart TD
 
 | Función | Qué hace |
 |---|---|
-| `identificar_caso(oraciones) -> str` | Clave del caso: las dos versiones de un caso comparten la primera oración |
+| `identificar_casos(textos, oraciones) -> list[int]` | Une dos notas en un caso si comparten al menos una oración y su texto coincide en ≥ 0,7 (`SequenceMatcher` por palabras). La distribución de similitud tiene un hueco entre 0,4 y 0,8, así que el umbral no es delicado. Resultado: 967 pares, 250 notas sueltas con error y un solo grupo de 4 (dos casos casi iguales, que conviene dejar juntos) |
 | `dividir_por_caso(df, k=5, semilla) -> list[tuple[índices, índices]]` | `GroupKFold` por caso: las dos versiones de un caso caen siempre en el mismo lado |
 
 Las 574 notas del conjunto de validación oficial de MS (repositorio de MEDEC) **quedan como prueba final**. Así
@@ -166,7 +166,7 @@ esputo amarillo verdoso, consolidación lobar) apunta a neumococo.
 | Función | Qué hace |
 |---|---|
 | `tokenizar_pares(pares, tokenizador) -> BatchEncoding` | `[CLS] oración [SEP] nota [SEP]`, `truncation="only_second"`, `max_length=512` (el par más largo tiene 425 tokens) |
-| `entrenar_detector(pares_train, pares_val) -> modelo` | `AutoModelForSequenceClassification(num_labels=1)` con `BCEWithLogitsLoss(pos_weight)`, AdamW con tasa 2e-5, 3–4 épocas y *early stopping* según la exactitud de A en validación |
+| `entrenar_detector(pares_train, pares_val) -> modelo` | `AutoModelForSequenceClassification(num_labels=1)` con `BCEWithLogitsLoss(pos_weight)`, AdamW con tasa 2e-5, lote 16, 3–4 épocas y *early stopping* según el F1 de A por nota en validación |
 | `puntuar_oraciones(modelo, nota) -> list[float]` | Probabilidad de error de cada oración de una nota |
 
 Arquitectura, con la forma del tensor (lote *B*, largo *L* ≤ 512):
@@ -185,7 +185,7 @@ Arquitectura, con la forma del tensor (lote *B*, largo *L* ≤ 512):
 |---|---|
 | `decidir_bandera(probs, umbral) -> int` | `1` si la oración más sospechosa supera el umbral |
 | `elegir_oracion(probs, mapa_ids) -> int` | Id oficial de la oración más sospechosa, o `-1` si la bandera es 0 |
-| `ajustar_umbral(probs_val, etiquetas_val) -> float` | Barre umbrales en validación y se queda con el de mayor exactitud en A |
+| `ajustar_umbral(probs_val, etiquetas_val) -> float` | Barre umbrales en validación y se queda con el de mayor F1 de la bandera **por nota** (la probabilidad de la nota es la de su oración más sospechosa), reportando también exactitud, precisión y *recall*. La exactitud es la métrica oficial, pero sola no dice si el detector falla por falsos positivos o por falsos negativos |
 
 Un solo modelo resuelve A y B: la bandera es «¿alguna oración pasa el umbral?» y la oración es la de mayor
 probabilidad. El umbral importa porque MEDEC vio que los LLM **ven errores donde no hay** (alto *recall*, baja
@@ -197,27 +197,46 @@ precisión); con el umbral controlamos ese balance.
 |---|---|
 | `marcar_oracion(nota, id) -> str` | Encierra la oración sospechosa entre `<err>` y `</err>` (dos tokens nuevos; se agrandan los *embeddings* con `resize_token_embeddings`) |
 | `armar_ejemplos_correccion(df) -> Dataset` | Entrada: la nota marcada. Objetivo: `Corrected Sentence`. Solo las 1.219 notas con error |
-| `entrenar_corrector(train, val) -> modelo` | `AutoModelForSeq2SeqLM` con `Seq2SeqTrainer`, entropía cruzada por token, tasa 3e-5; el mejor punto según ROUGE-1 en validación |
+| `entrenar_corrector(train, val) -> modelo` | `AutoModelForSeq2SeqLM` con `Seq2SeqTrainer`, entropía cruzada por token, tasa 3e-5, lote 8, hasta 5 épocas; el mejor punto según ROUGE-1 en validación |
 | `generar_correccion(modelo, nota_marcada, num_beams=4) -> str` | Genera la oración corregida, con `max_new_tokens=96` |
 
-Arquitectura: el codificador lee la nota marcada, (B, L ≤ 512) → (B, L, 1024). El decodificador genera la oración
+Arquitectura: el codificador lee la nota marcada, (B, L ≤ 1.024) → (B, L, 1024); la nota marcada más larga tiene unos 484 tokens, así que ninguna se corta. El decodificador genera la oración
 token por token y en cada paso devuelve (B, T, 85.403): el vocabulario de 85.401 más `<err>` y `</err>`.
 
 ### Caja 7 · Control de calidad
 
 | Función | Qué hace |
 |---|---|
-| `controlar_correccion(original, corregida, umbral=0,7) -> str` | Como WangLab: si el ROUGE-L entre la oración original y la corregida baja de 0,7, el modelo reescribió de más y se devuelve la original. Si la corrección es igual a la original, no corrigió nada y se marca para revisión |
+| `controlar_correccion(original, haces, umbral) -> str` | Como WangLab: si el ROUGE-L entre la oración original y la corregida baja del umbral, el modelo reescribió de más y se prueba el siguiente de los 4 haces; si ninguno pasa, queda el primero. Si la corrección es igual a la original, no corrigió nada y se marca para revisión |
+| `calibrar_umbral_calidad(val) -> float` | Elige el umbral que da mayor puntaje compuesto de C en validación. **No copiamos el 0,7 de WangLab**: entre la oración con error y su corrección de referencia, el ROUGE-L tiene mediana 0,667, así que con 0,7 se rechazarían 700 de las 1.219 correcciones **correctas** (57 %). En el ejemplo, «Proteus mirabilis» → «Klebsiella pneumoniae» da 0,667 |
+
+El umbral es una **heurística**, no una garantía médica: mide cuánto cambió la oración, no si quedó bien. Un cambio
+pequeño puede seguir siendo incorrecto y uno grande puede ser válido, así que es un filtro adicional, no la validación.
 
 ### Caja 8 · Salida y evaluación
 
 | Función | Qué hace |
 |---|---|
 | `formatear_salida(text_id, bandera, id, correccion) -> str` | Línea `text_id bandera id corrección` (con `-1 NA` si no hay error), el formato del *shared task* |
-| `exactitud_bandera(pred, real) -> float` | Subtarea A |
-| `exactitud_oracion(pred, real) -> float` | Subtarea B, sobre todas las notas (acertar `-1` también cuenta) |
+| `exactitud_bandera(pred, real) -> float` | Subtarea A (métrica oficial) |
+| `metricas_bandera(pred, real) -> dict` | Precisión, *recall* y F1 de la bandera, y la matriz de confusión: cuántas notas correctas marcamos con error y cuántos errores se nos escapan |
+| `exactitud_oracion(pred, real) -> float` | Subtarea B, sobre todas las notas (acertar `-1` también cuenta) y, aparte, solo sobre las notas con error, que es la localización real |
 | `puntajes_correccion(pred, ref) -> dict` | ROUGE-1, BERTScore (`microsoft/deberta-xlarge-mnli`), BLEURT-20 y su promedio, solo donde ambas son oraciones |
 | `puntaje_compuesto(pred, ref) -> float` | Regla oficial: 1 si ambas son `NA`, 0 si solo una lo es y la métrica en otro caso |
+
+### Hiperparámetros
+
+| Hiperparámetro | Detector BiomedBERT | Corrector BioBART-v2-large | De dónde sale |
+|---|---|---|---|
+| Dimensión / capas / cabezas | 768 / 12 / 12 × 64 | 1.024 / 12 + 12 / 16 × 64 | `config.json` del modelo; fijos al usar el preentrenado |
+| **Tamaño del vocabulario** | 30.522 | 85.401 + 2 = 85.403 | El tokenizador. Fija la tabla de *embeddings* (30.522 × 768 = 23,4 M parámetros) y, en BART, la capa de salida |
+| **Largo de secuencia** | `max_length=512`; el par más largo tiene 425 | Entrada hasta 1.024 (la más larga, ≈ 484); salida `max_new_tokens=96` | El límite de posiciones del modelo y lo medido en el dataset. Fija el relleno y el corte, no los parámetros |
+| Lote | 16 | 8 | La memoria de la GPU: el corrector es el modelo *large* con entradas más largas |
+| Optimizador y tasa | AdamW, 2e-5 | AdamW, 3e-5 | Rango típico de ajuste fino: más alta borra lo preentrenado, más baja no aprende |
+| Épocas | 3–4, *early stopping* con F1 de A | Hasta 5, mejor punto por ROUGE-1 | El ajuste fino sobreajusta rápido con 2.189 notas |
+| Pérdida | BCE con `pos_weight` = 21,7 | Entropía cruzada por token | 26.454 oraciones negativas / 1.219 positivas |
+| Decodificación | — | *Beam search*, 4 haces | Calidad contra costo; *greedy* es 1 haz |
+| Umbral | Bandera: mayor F1 en validación | Control de calidad: mayor puntaje de C en validación | Se calibran, no se copian |
 
 ### Extensión · Recuperar la pregunta de MedQA
 
@@ -247,7 +266,7 @@ Cada etapa se compara con una base sencilla y con lo publicado:
 | **Nuestro pipeline** | por medir | por medir | por medir |
 
 El pipeline debe superar las dos bases. En B, «la última oración» ya acierta el 62 % de las notas con error: si
-el detector no la supera, solo aprendió la posición.
+el detector no la supera, no mejora esa regla sencilla.
 
 ---
 
@@ -259,8 +278,11 @@ el detector no la supera, solo aprendió la posición.
   como hace MEDEC.
 - **Las métricas de corrección castigan sinónimos.** Conviene revisar a mano una muestra de correcciones con
   puntaje bajo antes de descartar un modelo.
-- **Siguiente paso:** programar las cajas 1–5 y medir A y B contra las dos bases; después, el corrector y el
-  control de calidad.
+- **El control de calidad no valida la medicina.** El umbral de ROUGE-L solo frena reescrituras largas. En una nota
+  nueva no hay corrección de referencia, así que el sistema solo puede marcar las correcciones dudosas para revisión
+  médica. BERTScore contra la referencia sirve únicamente en la evaluación con datos etiquetados.
+- **Siguiente paso:** programar las cajas 1–5 y medir A y B contra las dos bases; después, el corrector y la
+  calibración del control de calidad.
 
 ---
 
@@ -269,18 +291,28 @@ el detector no la supera, solo aprendió la posición.
 ```
 taller-7/
 ├── README.md                     este reporte
-├── requirements.txt              dependencias de la revisión del dataset
-├── datos/                        MEDIQA-CORR-2024-MS-TrainingData.csv (no se versiona)
+├── taller7_pipeline.ipynb        la implementación del pipeline (cajas 1–8 y la extensión MedQA), con salidas
+├── informe/taller7_grupo6.tex    el mismo reporte en LaTeX (≤ 5 páginas) y su PDF
+├── requirements.txt              dependencias de la revisión del dataset y del notebook
+├── datos/                        los dos CSV de MEDEC (no se versionan)
 ├── scripts/revisar_dataset.py    cifras de la §3
-└── resultados/revision_dataset.json
+├── resultados/
+│   ├── revision_dataset.json
+│   ├── metricas_pipeline.json    métricas, umbrales e historial de entrenamiento del notebook
+│   ├── predicciones_prueba.txt   salida del plan en el formato del shared task (574 notas de prueba)
+│   └── predicciones_prueba_final.txt   salida del pipeline final (sección 12)
+└── modelos/                      detector y corrector ajustados (no se versionan)
 ```
 
-El CSV es la parte MS de MEDEC (<https://github.com/abachaa/MEDEC>) y va en `datos/`.
+Los CSV son la parte MS de MEDEC (<https://github.com/abachaa/MEDEC>) y van en `datos/`:
+`MEDIQA-CORR-2024-MS-TrainingData.csv` (entrenamiento) y `MEDEC-MS-ValidationSet-with-GroundTruth-and-ErrorType.csv`
+(las 574 notas de prueba final).
 
 ```bash
 uv venv --python 3.12 && source .venv/bin/activate
 uv pip install -r requirements.txt
 python scripts/revisar_dataset.py
+jupyter lab taller7_pipeline.ipynb   # necesita GPU; TALLER7_RAPIDO=1 lo corre con pocas notas para probar
 ```
 
 **Referencias.** Ben Abacha, A. et al. (2024). *MEDEC: A Benchmark for Medical Error Detection and Correction in

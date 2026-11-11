@@ -1,0 +1,317 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{iftex}
+% Compila igual con pdfLaTeX (Overleaf) y con XeLaTeX/Tectonic.
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
+\else
+  \usepackage{fontspec}
+\fi
+\usepackage[spanish,es-tabla,es-noshorthands]{babel}
+\usepackage{microtype}
+\usepackage[margin=2cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xltabular}
+\usepackage{makecell}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+\usepackage[hidelinks]{hyperref}
+
+\captionsetup{font=small,labelfont=bf}
+\setlength{\parskip}{0.3em}
+\setlength{\parindent}{0pt}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcommand{\fn}[1]{\texttt{\small #1}}
+
+\title{\textbf{Taller 7: pipeline para detectar y corregir\\errores médicos en notas clínicas (MEDIQA-CORR 2024)}}
+\author{Grupo 6 \\ David Lasso \quad Nestor Fadiño \quad Camilo García \\[0.3em]
+  \small Procesamiento de Lenguaje Natural --- Maestría \\
+  \small Código: \url{https://github.com/CamiloGarcia06/maestria-pln/tree/taller-7}}
+\date{Noviembre de 2026}
+
+\begin{document}
+\maketitle
+\vspace{-1.5em}
+
+\begin{abstract}
+\noindent
+Una nota clínica de MEDIQA-CORR 2024 es correcta o trae un solo error médico. Hay que decir si tiene error
+(subtarea A), en qué oración está (B) y cómo se corrige (C). Revisamos los artículos de MEDEC y de WangLab y el
+dataset de entrenamiento MS (2.189 notas). Proponemos un pipeline con dos modelos de Hugging Face: BiomedBERT
+detecta y localiza el error, oración por oración, y BioBART-v2 escribe la oración corregida. Cada hallazgo del
+dataset termina en una decisión del pipeline. Por ejemplo, las notas vienen en pares (versión correcta y versión
+con error del mismo caso), así que la partición se hace por caso. Para cada caja del pipeline damos las funciones
+a programar y las bases que el sistema tiene que superar.
+\end{abstract}
+
+%======================================================================
+\section{Tarea y lo que tomamos de los artículos}
+
+\begin{table}[H]
+\centering\small
+\begin{tabularx}{\textwidth}{llL}
+\toprule
+Subtarea & Salida & Métrica oficial \\
+\midrule
+A. Bandera de error  & 1 si la nota tiene error, 0 si no & exactitud \\
+B. Oración con error & id de la oración, $-1$ si no hay error & exactitud \\
+C. Corrección        & oración corregida, \texttt{NA} si no hay error & ROUGE-1, BERTScore, BLEURT y su promedio \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{MEDEC} (Ben Abacha et al., 2024) es el benchmark. Cada nota es correcta o trae un error de cinco tipos:
+diagnóstico, manejo, tratamiento, farmacoterapia u organismo causal. La parte MS, que es nuestro CSV, sale de
+preguntas del examen médico de EE.\,UU. (MedQA). Los anotadores pusieron en el caso la respuesta correcta o una
+incorrecta, casi siempre en la mitad o al final del texto. Con un \emph{prompt}, Claude 3.5 Sonnet fue el mejor
+detectando (70\,\% en A) y o1-preview el mejor corrigiendo (0,70 de puntaje compuesto). De este artículo tomamos
+dos ideas. Primera: \textbf{detectar y corregir son habilidades distintas}, porque el mejor detector quedó último
+corrigiendo. Por eso usamos un modelo para cada tarea. Segunda: \textbf{ROUGE no ve sinónimos}
+(«agammaglobulinemia de Bruton» y «ligada al X» son la misma enfermedad), así que medimos también con BERTScore
+y BLEURT.
+
+\textbf{WangLab} (Toma et al., 2024) ganó las tres subtareas (86,5\,\% en A, 83,6\,\% en B, 0,789 en C) con
+GPT-4 y DSPy. Para notas reales encadena tres módulos (detectar $\rightarrow$ localizar $\rightarrow$ corregir)
+y aplica un \textbf{control de calidad}: si el ROUGE-L entre la oración original y la corregida baja de 0,7,
+descarta la corrección. Para MS, además, recupera con TF-IDF la pregunta de MedQA de la que salió la nota y
+convierte la corrección en elegir una de sus opciones. Tomamos la cadena de tres pasos y el control de calidad, pero con el umbral recalibrado (Sección~\ref{sec:eval}).
+La recuperación de MedQA queda como extensión.
+
+%======================================================================
+\section{Revisión del dataset}
+
+\texttt{MEDIQA-CORR-2024-MS-TrainingData.csv} tiene 2.189 notas. Para cada nota trae el texto, las oraciones
+numeradas, la bandera, el id y el texto de la oración con error, y la oración corregida. No trae el tipo de error.
+Las cifras salen de \texttt{scripts/revisar\_dataset.py}. Cada hallazgo de la Tabla~\ref{tab:hallazgos} termina
+en una decisión del pipeline.
+
+\begin{table}[H]
+\centering\small
+\caption{Hallazgos del dataset y la decisión que toman en el pipeline.}
+\label{tab:hallazgos}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{4.2cm} >{\raggedright\arraybackslash}p{3.6cm} L}
+\toprule
+Hallazgo & Cifra & Decisión \\
+\midrule
+Clases casi balanceadas & 1.219 con error (55,7\,\%) y 970 sin error
+  & Decir siempre «hay error» da 55,7\,\% en A: es la base a superar \\
+Muchas oraciones y una sola mala & 12,6 oraciones por nota (máx.~48); 27.673 en total
+  & El detector clasifica \textbf{cada oración}: 21,7 negativas por positiva \emph{a nivel de oración} (por nota es 1.219 contra 970), así que se entrena con peso de clase $\approx 21{,}7$ \\
+\textbf{Las notas vienen en pares} & 1.219 casos; en 967 hay una versión correcta y otra con error (88\,\% de las notas), en 250 solo la versión con error, en 1 solo la correcta y 1 grupo junta 4 notas de dos casos casi iguales
+  & Partición \textbf{por caso} (\fn{GroupKFold}). Si una versión cae en entrenamiento y la otra en validación, el modelo ya vio el caso y la validación miente. La primera oración no sirve de clave: junta casos distintos que abren igual (6 grupos de 3--4 notas) y separa 28 pares, 15 de ellos con el error en la oración 0 \\
+\textbf{El error suele ir al final} & 62,3\,\% en la última oración; 9,4\,\% en la primera mitad
+  & «Elegir siempre la última oración» es la base de B. No damos la posición como rasgo: es un efecto de cómo se armó MS y no se cumple en notas reales \\
+Segmentación imperfecta & 1.289 notas con «oraciones» de $\le 3$ palabras (\texttt{"Hg."}); 336 con 1.131 líneas sin id, casi todas de laboratorio
+  & \textbf{No descartar nada}: las líneas sin id se pegan a la oración anterior. Unir los fragmentos, pero \textbf{guardar el mapa a los ids oficiales}, porque B se califica con ellos \\
+La corrección es un cambio corto & 3,5 palabras cambiadas en promedio (máx.~24)
+  & El corrector reescribe \textbf{una oración}, no la nota. El control de calidad rechaza las salidas que se alejan demasiado de la original \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Vocabulario contra largo de secuencia.} Son dos cosas distintas. El \emph{tamaño del vocabulario} es
+cuántos tokens conoce el tokenizador. Fija la tabla de \emph{embeddings} (en BiomedBERT, $30.522 \times 768 =
+23{,}4$\,M de parámetros) y decide cómo se parte cada palabra. El \emph{largo de secuencia} es cuántos tokens tiene
+un ejemplo. Fija el relleno y el corte (\fn{max\_length}), no los parámetros. La Tabla~\ref{tab:tokens} compara
+los tokenizadores con las notas del dataset. El modelo general despedaza los términos médicos y algunas notas
+pasan de 512 tokens. Los dos biomédicos dejan las palabras casi enteras y ninguna nota se corta. Usamos
+\fn{max\_length=512} con relleno dinámico: cada lote se rellena hasta su nota más larga.
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{Tokenizadores sobre las notas de MS. Ejemplo: «Haemophilus influenzae metoprolol».}
+\label{tab:tokens}
+\begin{tabular}{lrlccc}
+\toprule
+Tokenizador & Vocab. & Partición del ejemplo & \makecell{Tokens por nota\\(media / máx.)} & \makecell{Par oración\\+ nota (máx.)} & \makecell{Largo máx.\\del modelo} \\
+\midrule
+BiomedBERT & 30.522 & \makecell[l]{\texttt{haem \#\#ophilus influenzae}\\\texttt{met \#\#oprol \#\#ol}} & 173 / 414 & 425 & 512 \\
+BioBART-v2 & 85.401 & \makecell[l]{\texttt{Haemophilus influenzae}\\\texttt{metoprolol}} & 189 / 482 & 497 & 1.024 \\
+Flan-T5 (general) & 32.100 & 12 piezas: \texttt{Ha e m ophil us \ldots} & 204 / 516 & 521 & 512 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%======================================================================
+\section{El pipeline}
+
+Usamos dos modelos de Hugging Face, uno para cada habilidad:
+\begin{itemize}\setlength{\itemsep}{0pt}
+  \item \textbf{Detector-localizador (A y B):} BiomedBERT\newline{\small\nolinkurl{microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext}},
+    un BERT preentrenado desde cero con PubMed. Lo ajustamos para decir si \emph{una oración}, leída junto a
+    \emph{toda la nota}, es la del error. La oración tiene que ir con la nota porque el error solo se ve en
+    contexto. «El organismo causal es \emph{H.~influenzae}» es una frase correcta por sí sola. Es un error porque
+    el cuadro de la nota (consolidación lobar, esputo verdoso) apunta a neumococo.
+  \item \textbf{Corrector (C):} BioBART-v2\newline{\small\nolinkurl{GanjinZero/biobart-v2-large}}, un BART codificador-decodificador
+    preentrenado con PubMed. Recibe la nota con la oración sospechosa marcada y genera la oración corregida.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  caja/.style={draw, rounded corners=2pt, fill=blue!6, align=center, font=\footnotesize,
+               minimum height=1.05cm, text width=3.6cm},
+  dec/.style={draw, diamond, aspect=2.2, fill=orange!12, font=\footnotesize, inner sep=1pt},
+  ext/.style={draw, dashed, rounded corners=2pt, fill=gray!8, align=center, font=\footnotesize, text width=3.6cm},
+  flecha/.style={-{Stealth[length=2mm]}, thick},
+  node distance=0.45cm and 0.5cm]
+  \node[caja] (c1) {\textbf{1. Carga y limpieza}\\CSV $\rightarrow$ segmentos};
+  \node[caja, right=of c1] (c2) {\textbf{2. Partición por caso}\\\fn{GroupKFold}};
+  \node[caja, right=of c2] (c3) {\textbf{3. Ejemplos por oración}\\(oración, nota, etiqueta)};
+  \node[caja, below=of c3] (c4) {\textbf{4. Detector}\\BiomedBERT};
+  \node[caja, left=of c4] (c5) {\textbf{5. Decisión A y B}\\umbral y argmax};
+  \node[dec, left=of c5] (d) {¿bandera $=1$?};
+  \node[caja, below=0.7cm of d] (c6) {\textbf{6. Corrector}\\BioBART-v2};
+  \node[caja, right=of c6] (c7) {\textbf{7. Control de calidad}\\ROUGE-L $\ge$ umbral calibrado};
+  \node[caja, right=of c7] (c8) {\textbf{8. Salida y evaluación}\\formato del \emph{shared task}};
+  \node[ext, below=0.45cm of c6] (x) {\textbf{Extensión: MedQA}\\TF-IDF $\rightarrow$ opciones};
+  \draw[flecha] (c1) -- (c2);
+  \draw[flecha] (c2) -- (c3);
+  \draw[flecha] (c3) -- (c4);
+  \draw[flecha] (c4) -- (c5);
+  \draw[flecha] (c5) -- (d);
+  \draw[flecha] (d) -- node[left, font=\footnotesize] {sí} (c6);
+  \draw[flecha] (c6) -- (c7);
+  \draw[flecha] (c7) -- (c8);
+  \draw[flecha] (d.west) -- ++(-0.35,0) |- ([yshift=-0.45cm]x.south)
+     -| node[pos=0.25, below, font=\footnotesize] {no: $-1$ y \texttt{NA}} (c8.south);
+  \draw[flecha, dashed] (x) -- (c6);
+\end{tikzpicture}
+\caption{El pipeline. Las cajas 1--5 resuelven A y B; la 6 y la 7 solo corren si la nota tiene error.}
+\label{fig:pipeline}
+\end{figure}
+
+La Tabla~\ref{tab:funciones} da las funciones a programar en cada caja.
+
+{\small
+\setlength{\tabcolsep}{4pt}
+\begin{xltabular}{\textwidth}{>{\raggedright\arraybackslash}p{5.9cm} L}
+\caption{Funciones a programar en cada caja del pipeline.}\label{tab:funciones} \\
+\toprule
+Función & Qué hace \\
+\midrule
+\endfirsthead
+\toprule
+Función & Qué hace \\
+\midrule
+\endhead
+\multicolumn{2}{l}{\textbf{Caja 1 · Carga y limpieza}} \\
+\fn{cargar\_corpus(ruta)} & Lee el CSV y normaliza tipos (id a entero, \texttt{NA} a \texttt{None}) \\
+\fn{parsear\_oraciones(columna)} & Convierte \texttt{"0 texto\textbackslash n1 texto"} en \{id: oración\}. Las líneas sin id (laboratorios) se pegan a la oración anterior, no se descartan \\
+\fn{unir\_fragmentos(oraciones)} & Pega a la oración anterior los fragmentos que no son oración (\texttt{"Hg."}, \texttt{"100/68 mm"}) \\
+\fn{mapear\_ids\_oficiales(segmentos)} & Guarda qué ids oficiales cubre cada segmento, para devolver el id que exige B \\
+\multicolumn{2}{l}{\textbf{Caja 2 · Partición por caso}} \\
+\fn{identificar\_casos(textos, oraciones)} & Une dos notas si comparten una oración y su texto coincide en $\ge 0{,}7$ (\fn{SequenceMatcher}). La similitud tiene un hueco entre 0,4 y 0,8: el umbral no es delicado \\
+\fn{dividir\_por\_caso(df, k=5)} & \fn{GroupKFold}: las dos versiones de un caso caen siempre del mismo lado. Las 574 notas de validación oficial de MS quedan como prueba final \\
+\multicolumn{2}{l}{\textbf{Caja 3 · Ejemplos por oración}} \\
+\fn{armar\_pares\_oracion\_nota(nota)} & Por cada segmento: (oración candidata, nota completa, etiqueta 1 si contiene el id de error) \\
+\fn{calcular\_peso\_clase(pares)} & negativos / positivos $\approx 21{,}7$, para el \fn{pos\_weight} de la pérdida \\
+\multicolumn{2}{l}{\textbf{Caja 4 · Detector BiomedBERT}} \\
+\fn{tokenizar\_pares(pares, tok)} & \texttt{[CLS] oración [SEP] nota [SEP]}, \fn{truncation="only\_second"}, \fn{max\_length=512} \\
+\fn{entrenar\_detector(train, val)} & \fn{AutoModelForSequenceClassification(num\_labels=1)}: el vector \texttt{[CLS]} (768) pasa a 1 logit. \fn{BCEWithLogitsLoss(pos\_weight)}, AdamW 2e-5, lote 16, 3--4 épocas, \emph{early stopping} con el F1 de A por nota \\
+\fn{puntuar\_oraciones(modelo, nota)} & Probabilidad de error de cada oración de la nota \\
+\multicolumn{2}{l}{\textbf{Caja 5 · Decisión de A y B}} \\
+\fn{ajustar\_umbral(probs, etiquetas)} & Barre umbrales en validación y se queda con el de mayor F1 de la bandera, calculado \emph{por nota}: la probabilidad de la nota es la de su oración más sospechosa. Controla los falsos positivos que MEDEC vio en los LLM \\
+\fn{decidir\_bandera(probs, umbral)} & 1 si la oración más sospechosa supera el umbral \\
+\fn{elegir\_oracion(probs, mapa\_ids)} & Id oficial de la oración más sospechosa, o $-1$ si la bandera es 0 \\
+\multicolumn{2}{l}{\textbf{Caja 6 · Corrector BioBART-v2}} \\
+\fn{marcar\_oracion(nota, id)} & Encierra la oración entre \texttt{<err>} y \texttt{</err>} (tokens nuevos, \fn{resize\_token\_embeddings}) \\
+\fn{armar\_ejemplos\_correccion(df)} & Entrada: la nota marcada. Objetivo: la oración corregida. Solo las 1.219 notas con error \\
+\fn{entrenar\_corrector(train, val)} & \fn{AutoModelForSeq2SeqLM} con \fn{Seq2SeqTrainer}, tasa 3e-5, lote 8, hasta 5 épocas, mejor punto según ROUGE-1 en validación \\
+\fn{generar\_correccion(modelo, nota)} & \emph{Beam search} con 4 haces y \fn{max\_new\_tokens=96} \\
+\multicolumn{2}{l}{\textbf{Caja 7 · Control de calidad}} \\
+\fn{controlar\_correccion(orig, haces, umbral)} & Si el ROUGE-L con la original baja del umbral (reescribió de más), prueba el siguiente de los 4 haces; si ninguno pasa, queda el primero. Si la salida es igual a la original, la marca para revisión \\
+\fn{calibrar\_umbral\_calidad(val)} & Elige el umbral con mayor puntaje de C en validación. El 0,7 de WangLab rechazaría el 57\,\% de las correcciones correctas \\
+\multicolumn{2}{l}{\textbf{Caja 8 · Salida y evaluación}} \\
+\fn{formatear\_salida(id, bandera, \ldots)} & Línea \texttt{text\_id bandera id corrección}, con \texttt{-1 NA} si no hay error \\
+\fn{exactitud\_bandera(pred, real)}\newline\fn{exactitud\_oracion(pred, real)} & Subtareas A y B (métrica oficial). En B, acertar el $-1$ también cuenta; aparte, B solo sobre las notas con error \\
+\fn{metricas\_bandera(pred, real)} & Precisión, \emph{recall}, F1 y matriz de confusión de A: separa falsos positivos de falsos negativos \\
+\fn{puntajes\_correccion(pred, ref)} & ROUGE-1, BERTScore (\fn{deberta-xlarge-mnli}), BLEURT-20 y su promedio \\
+\fn{puntaje\_compuesto(pred, ref)} & Regla oficial: 1 si ambas son \texttt{NA}, 0 si solo una lo es; si no, la métrica \\
+\multicolumn{2}{l}{\textbf{Extensión · MedQA}} \\
+\fn{indexar\_medqa(dataset)} & Índice TF-IDF de \fn{GBaker/MedQA-USMLE-4-options} \\
+\fn{recuperar\_pregunta(nota, k=3)} & Las preguntas de MedQA más parecidas a la nota \\
+\fn{candidatos\_correccion(pregunta)} & Sus opciones de respuesta: pistas para el corrector o para reordenar sus haces \\
+\bottomrule
+\end{xltabular}
+}
+
+\begin{table}[H]
+\centering\footnotesize
+\setlength{\tabcolsep}{3pt}
+\caption{Hiperparámetros y de dónde sale cada valor. El vocabulario fija parámetros; el largo de secuencia, relleno y corte.}
+\label{tab:hiper}
+\begin{tabularx}{\textwidth}{lllL}
+\toprule
+Hiperparámetro & Detector BiomedBERT & Corrector BioBART-v2 & De dónde sale \\
+\midrule
+Dimensión, capas, cabezas & 768, 12, $12 \times 64$ & 1.024, 12+12, $16 \times 64$ & \fn{config.json}; fijos \\
+\textbf{Vocabulario} & 30.522 & 85.401 + 2 = 85.403 & Fija los \emph{embeddings} \\
+\textbf{Largo de secuencia} & 512 (par máx.\ 425) & 1.024 (máx.\ $\approx$ 484); salida 96 & Medido: nada se corta \\
+Lote & 16 & 8 & Memoria (modelo \emph{large}) \\
+Optimizador, tasa & AdamW, 2e-5 & AdamW, 3e-5 & Típico de ajuste fino \\
+Épocas & 3--4, parada por F1 de A & Hasta 5, mejor ROUGE-1 & Pocos datos: sobreajusta \\
+Pérdida & BCE, \fn{pos\_weight}\,=\,21,7 & Entropía cruzada & 26.454 / 1.219 oraciones \\
+Decodificación & --- & \emph{Beam search}, 4 haces & \emph{Greedy} es 1 haz \\
+Umbral & Bandera: mayor F1 & Calidad: mayor puntaje C & Calibrados en validación \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%======================================================================
+\section{Evaluación y limitaciones}\label{sec:eval}
+
+Cada etapa se compara con una base sencilla y con lo publicado (Tabla~\ref{tab:referencia}). En B, «la última
+oración» ya acierta el 62\,\% de las notas con error. Si el detector no supera esa cifra, no mejora esa regla
+sencilla. La exactitud oficial no distingue falsas alarmas de errores perdidos: reportamos también precisión,
+\emph{recall} y F1 de A, y B solo sobre las notas con error.
+
+\begin{table}[H]
+\centering\small
+\caption{Bases y resultados publicados. Las dos primeras filas se calcularon sobre nuestro entrenamiento; las
+demás, sobre la prueba de cada artículo.}
+\label{tab:referencia}
+\begin{tabular}{lccc}
+\toprule
+Sistema & A. Bandera & B. Oración & C. Compuesto \\
+\midrule
+Siempre «hay error» & 55,7\,\% & --- & --- \\
+Siempre «la última oración» (notas con error) & --- & 62,3\,\% & --- \\
+Claude 3.5 Sonnet, \emph{prompt} (MEDEC) & 70,2\,\% & 65,6\,\% & 0,280 \\
+o1-preview, \emph{prompt} (MEDEC) & 67,5\,\% & 61,4\,\% & 0,698 \\
+Médicos \#1 / \#2 (MEDEC) & 79,6 / 71,6\,\% & 65,9 / 66,8\,\% & 0,453 / 0,712 \\
+WangLab, GPT-4 + DSPy & 86,5\,\% & 83,6\,\% & 0,789 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Limitaciones.} Solo tenemos datos MS: las notas reales (UW) piden un acuerdo de uso. Un modelo ajustado con
+MS puede aprender la plantilla del examen y no los errores reales; en MEDEC, o1-preview baja de 73\,\% en MS a
+58\,\% en UW. El CSV no trae el tipo de error, así que no podemos medir el \emph{recall} por tipo. Las
+métricas de C castigan los sinónimos: hay que revisar a mano las correcciones con puntaje bajo. Y el control de
+calidad no se puede copiar: el ROUGE-L entre la oración con error y su corrección de referencia tiene mediana 0,667,
+así que el 0,7 de WangLab rechazaría 700 de las 1.219 correcciones \emph{correctas} (57\,\%); «Proteus mirabilis»
+$\rightarrow$ «Klebsiella pneumoniae» da 0,667. Por eso el umbral se calibra en validación. Ese control mide cuánto
+cambió la oración, no si quedó bien. En una nota nueva no hay referencia: el sistema solo puede marcar las correcciones
+dudosas para revisión médica. BERTScore contra la referencia sirve únicamente al evaluar con datos etiquetados.
+
+\section*{Referencias}
+{\small
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item[] Ben Abacha, A. et al. (2024). \emph{MEDEC: A
+    Benchmark for Medical Error Detection and Correction in Clinical Notes}. arXiv:2412.19260.
+    Datos: \url{https://github.com/abachaa/MEDEC}.
+  \item[] Toma, A. et al. (2024). \emph{WangLab at MEDIQA-CORR 2024:
+    Optimized LLM-based Programs for Medical Error Detection and Correction}. Proceedings of the 6th Clinical
+    Natural Language Processing Workshop, 616--623.
+\end{itemize}
+}
+
+\end{document}

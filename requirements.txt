@@ -1,4 +1,16 @@
+# Revisión del dataset (scripts/revisar_dataset.py)
 pandas
-transformers
+transformers<5  # bleurt-pytorch todavía no funciona con transformers 5
 sentencepiece
 protobuf
+rouge-score
+
+# Notebook del pipeline (taller7_pipeline.ipynb), probado con torch 2.15 + CUDA en una RTX 4060 Ti de 16 GB
+torch
+datasets<4
+accelerate
+scikit-learn
+rouge  # el paquete que usa el script oficial de MEDIQA-CORR para ROUGE-1
+bert-score
+bleurt-pytorch @ git+https://github.com/lucadiliello/bleurt-pytorch.git
+jupyterlab
