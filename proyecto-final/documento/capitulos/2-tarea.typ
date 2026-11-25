@@ -60,3 +60,25 @@ Con $beta = 0.5$ la precisión pesa el doble que el recall. Es lo que necesita e
 Hay 2 TP, 1 FP y 2 FN, así que $P = 2 / 3 = "0,667"$, $R = 2 / 4 = "0,5"$ y
 $ F_(0.5) = ("1,25" times "0,667" times "0,5") / ("0,25" times "0,667" + "0,5") = "0,417" / "0,667" = "0,625". $
 La F1, que pesa igual precisión y recall, daría 0,571: F0.5 premia más que el modelo haya acertado en casi todo lo que tocó. _give_ por _leave_ cuenta dos veces en contra: como cambio que no está en la referencia (FP) y como error de la referencia sin corregir (FN). En el corpus completo, ERRANT suma los TP, FP y FN de todas las oraciones y calcula P, R y F0.5 una sola vez sobre los totales; no promedia por oración.
+
+*¿Por qué no BLEU ni ROUGE?* Son las métricas habituales de la generación de lenguaje: BLEU @papineni2002bleu en traducción y ROUGE @lin2004rouge en resumen. Las dos cuentan cuántos n-gramas de la salida coinciden con la referencia. En corrección gramatical eso no sirve, porque la salida es casi igual a la entrada. Lo medimos en FCE test con tres sistemas (@tab-bleu):
+
+#figure(
+  table(
+    columns: (1.6fr, auto, auto, auto),
+    align: (left, right, right, right),
+    table.header[Sistema][BLEU][ROUGE-L][F0.5],
+    [Copiar la entrada, sin corregir nada], [74,6], [90,2], [0],
+    [Meter errores: _the_ → _a_ en 1.224 oraciones], [68,3], [87,4], [0,002],
+    [*BART-large (el modelo elegido)*], [*81,2*], [*92,3*], [*0,527*],
+  ),
+  caption: [BLEU, ROUGE-L y F0.5 de tres sistemas en FCE test (2.695 oraciones). BLEU de `sacrebleu` a nivel de corpus; ROUGE-L, F promedio por oración.],
+) <tab-bleu>
+
+Un sistema que no corrige nada saca 74,6 de BLEU y 90,2 de ROUGE-L, cifras que parecen excelentes, y uno que daña el texto apenas pierde seis puntos. F0.5 los pone donde corresponde: 0 a los dos, y 0,527 al modelo. Hay tres razones de fondo:
+
++ *BLEU y ROUGE premian copiar.* Como el 86 % de los tokens se copia, cualquier salida parecida a la entrada coincide en casi todo con la referencia. Las diferencias entre sistemas quedan comprimidas en pocos puntos (74,6 contra 81,2).
++ *No distinguen corregir de más de corregir de menos.* Una corrección falsa y un error sin corregir les cuestan lo mismo: unos n-gramas menos. F0.5 los separa en FP y FN y, con $beta = 0.5$, castiga el doble lo que más daño le hace a nuestro usuario: enseñarle una regla falsa.
++ *No dicen qué se corrigió.* F0.5 de ERRANT se puede desglosar por tipo de error (sección 6.3), y la aplicación usa ese desglose para decidir la confianza de cada explicación (capítulo 7).
+
+Además, F0.5 de ERRANT es la métrica oficial de BEA-2019 @bryant2019bea, el origen de nuestros datos, así que el resultado se puede comparar con la literatura. GLEU @napoles2015gleu, una variante de BLEU pensada para corrección, se usa en otros corpus como JFLEG, pero hereda el problema de puntuar la oración completa y no da el desglose por tipo.

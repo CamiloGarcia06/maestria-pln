@@ -1,0 +1,4 @@
+sistema,bleu,rougeL,f05
+copiar,74.6,90.2,0.0
+meter errores (the→a),68.3,87.4,0.002
+BART-large,81.2,92.3,0.527
