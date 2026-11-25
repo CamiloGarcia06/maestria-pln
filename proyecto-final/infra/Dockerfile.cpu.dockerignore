@@ -1,0 +1,5 @@
+# Contexto de la imagen CPU: solo el código de la app (el modelo se monta, no se copia)
+*
+!src/
+!app/
+**/__pycache__

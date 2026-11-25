@@ -1,0 +1,16 @@
+name: corrector-cpu
+
+# Solo la app, en CPU y en localhost: docker compose -f infra/compose.cpu.yaml up -d --build
+# Abre http://localhost:8000/ cuando los logs digan "Application startup complete".
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.cpu
+    image: corrector-gramatical-cpu
+    container_name: corrector-cpu
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # Carpeta con config.json, model.safetensors y el tokenizador de BART-large
+      - ../modelo:/modelo:ro

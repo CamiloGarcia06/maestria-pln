@@ -22,9 +22,9 @@ flowchart LR
 |---|---|---|
 | 1. Corpus | Lee los M2 oficiales y los alinea con los ensayos (L1, nota, autor) | `As you know I am in charge for organise the conference …` |
 | 2. Preparación | Aplica las ediciones del anotador 0, destokeniza y filtra | entrada `… in charge for organise …` → destino `… in charge of organising …` |
-| 3. BART | Genera la oración corregida (el destino de referencia es lo que debe aprender) | `As you know, I am in charge of organising the conference …` |
-| 4. ERRANT | Extrae y tipa las ediciones (aquí, las de la anotación oficial) | `+ ,` `M:PUNCT`; `for → of` `R:PREP`; `organise → organising` `R:VERB:FORM`; `left → leave` `R:VERB:FORM` |
-| 5. Explicación | Plantilla por tipo de error | `R:PREP`: «*in charge* se construye con *of*» |
+| 3. BART | Genera la oración corregida (BART-large afinado, *beam search* de 4) | `As you know I am in charge of organising the conference …` |
+| 4. ERRANT | Extrae y tipa las ediciones (aquí, las de la anotación oficial; en la app, las de la salida de BART) | `+ ,` `M:PUNCT`; `for → of` `R:PREP`; `organise → organising` `R:VERB:FORM`; `left → leave` `R:VERB:FORM` |
+| 5. Explicación | Plantilla por tipo de error, con nivel de confianza | `R:PREP` (media): «La preposición correcta es «of», no «for». Las preposiciones no se traducen palabra por palabra del español…» |
 
 ## Estructura
 
@@ -57,6 +57,7 @@ proyecto-final/
 │   └── 06_explicacion.ipynb        POS tagging, tipos de ERRANT y explicaciones; demo con texto propio
 ├── figuras/  resultados/    salidas de los notebooks (PNG y CSV)
 ├── presentacion/            entrega 1
+├── documento/               documento final (Typst → proyecto_final_grupo6.pdf)
 ├── datos/                   (no versionado) crudos/ y procesados/
 └── modelos/                 (no versionado) checkpoints de BART
 ```
@@ -231,6 +232,26 @@ El servicio `app` de `infra/compose.yaml` comparte imagen y GPU con Jupyter y qu
 4. Debajo queda el texto corregido completo, con un botón para copiarlo.
 
 `GET /api/salud` devuelve el modelo cargado y el dispositivo. Para usar otro checkpoint: variable `MODELO` en el servicio. Los tests (`tests/test_app.py`) usan un corrector falso, así que no necesitan GPU.
+
+### Sin GPU: solo la app, en CPU
+
+Para probar el corrector en cualquier PC (Linux, Windows o Mac con Docker), sin entrenar nada, hay una imagen liviana que solo sirve la app (`infra/Dockerfile.cpu`, PyTorch para CPU, ~1 s por oración):
+
+```bash
+# poner el checkpoint de BART-large (config.json, model.safetensors y tokenizador) en proyecto-final/modelo/
+docker compose -f infra/compose.cpu.yaml up -d --build
+# abrir http://localhost:8000/ cuando los logs digan «Application startup complete»
+```
+
+El checkpoint pesa ~1,6 GB y no está en el repositorio; el grupo lo comparte aparte.
+
+## Documento final
+
+`documento/proyecto_final_grupo6.pdf` describe la implementación etapa por etapa siguiendo a Ashmore et al. (2021): gestión de datos, aprendizaje, verificación y despliegue. La fuente está en Typst (`documento/main.typ` y `documento/capitulos/`) y usa las figuras de `figuras/`. Para recompilar, desde `proyecto-final/`:
+
+```bash
+typst compile --root . documento/main.typ documento/proyecto_final_grupo6.pdf
+```
 
 ## Problemas conocidos
 

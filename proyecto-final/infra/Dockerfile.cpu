@@ -1,0 +1,18 @@
+# Imagen liviana solo para la app web, en CPU: para correrla en cualquier PC (Windows, Mac, Linux).
+# La de infra/Dockerfile es la de Jupyter con CUDA y entrenamiento; esta solo sirve el corrector.
+FROM python:3.12-slim
+
+# PyTorch para CPU (~200 MB en vez de ~2,5 GB del wheel con CUDA)
+RUN pip install --no-cache-dir torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir transformers==5.20.2 errant==3.0.2 spacy==3.8.16 \
+      fastapi==0.115.6 uvicorn==0.34.0 \
+ && python -m spacy download en_core_web_sm
+
+WORKDIR /work
+COPY src ./src
+COPY app ./app
+
+# El modelo se monta en /modelo (ver infra/compose.cpu.yaml)
+ENV MODELO=/modelo
+EXPOSE 8000
+CMD ["uvicorn", "servidor:app", "--app-dir", "app", "--host", "0.0.0.0", "--port", "8000"]
