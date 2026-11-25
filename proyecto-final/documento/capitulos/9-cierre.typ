@@ -1,6 +1,6 @@
 = Limitaciones y trabajo futuro
 
-- *No comparamos con un LLM.* En la entrega 1 propusimos dos líneas base: no corregir y un LLM sin entrenar. Solo medimos la primera, más BART sin afinar (F0.5 = 0,007). Una comparación con un LLM por _prompting_ sobre FCE test, con la misma evaluación de ERRANT, diría si vale la pena el afinado frente a un modelo general, sobre todo en precisión.
+- *No comparamos con un LLM.* En la entrega 1 propusimos dos líneas base: no corregir y un LLM sin entrenar. Solo medimos la primera, más BART-large sin afinar (F0.5 = 0,014). Una comparación con un LLM por _prompting_ sobre FCE test, con la misma evaluación de ERRANT, diría si vale la pena el afinado frente a un modelo general, sobre todo en precisión.
 - *El test de hispanohablantes es pequeño.* Son 224 oraciones de 20 textos, todas del examen de 2001, y su distribución de errores difiere de train (JSD 0,215 contra 0,103 del azar). Las diferencias de uno o dos puntos en ese conjunto no son concluyentes.
 - *Las explicaciones no se evaluaron con usuarios.* Medimos cobertura (91,4 %), no si el estudiante entiende la explicación ni si aprende. Además, la explicación es tan buena como la corrección: si BART hace un cambio innecesario, la plantilla lo explica igual de convencida. La confianza por tipo mitiga eso, pero no lo elimina.
 - *El modelo trabaja oración por oración.* No ve el párrafo, así que no corrige la concordancia de tiempos entre oraciones ni la coherencia. Por diseño, también deja pasar las reescrituras de estilo.
