@@ -1,6 +1,6 @@
 # Maestría · Procesamiento de Lenguaje Natural — Grupo 6
 
-David Lasso · Nestor Fadiño · Camilo García
+Juan Camilo Sandoval García · Nestor Fandiño · David Nicolás Lasso
 
 ## Proyecto final: un tutor que corrige y explica
 

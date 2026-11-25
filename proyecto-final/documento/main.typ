@@ -4,7 +4,7 @@
 #let titulo = "Un tutor que corrige y explica: corrección gramatical para estudiantes hispanohablantes de inglés con BART y ERRANT"
 #let repo = "https://github.com/CamiloGarcia06/maestria-pln/tree/proyecto-final"
 
-#set document(title: titulo, author: ("David Lasso", "Nestor Fadiño", "Camilo García"))
+#set document(title: titulo, author: ("Juan Camilo Sandoval García", "Nestor Fandiño", "David Nicolás Lasso"))
 #set text(lang: "es", region: "co", font: "Libertinus Serif", size: 11pt)
 #set par(justify: true, leading: 0.62em, spacing: 0.9em)
 #set page(paper: "a4", margin: (x: 2.3cm, y: 2.2cm))
@@ -32,9 +32,9 @@
   #v(2.2cm)
   #text(size: 12pt)[*Grupo 6*] \
   #v(0.15cm)
-  David Lasso \
-  Nestor Fadiño \
-  Camilo García
+  Juan Camilo Sandoval García \
+  Nestor Fandiño \
+  David Nicolás Lasso
   #v(1.6cm)
   Maestría · Procesamiento de Lenguaje Natural \
   Noviembre de 2026
